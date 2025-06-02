@@ -1,0 +1,39 @@
+services:
+  web_site:
+    build:
+      context: ./apps/web_site
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./apps/web_site:/usr/src/app
+      - /usr/src/app/node_modules
+      - /usr/src/app/.next
+    env_file:
+      - ./apps/web_site/.env
+
+  web_app:
+    build:
+      context: ./apps/web_app
+      dockerfile: Dockerfile
+    ports:
+      - "3001:3001"
+    volumes:
+      - ./apps/web_app:/usr/src/app
+      - /usr/src/app/node_modules
+      - /usr/src/app/.next
+    env_file:
+      - ./apps/web_app/.env
+
+  web_admin:
+    build:
+      context: ./apps/web_admin
+      dockerfile: Dockerfile
+    ports:
+      - "3002:3002"
+    volumes:
+      - ./apps/web_admin:/usr/src/app
+      - /usr/src/app/node_modules
+      - /usr/src/app/.next
+    env_file:
+      - ./apps/web_admin/.env
