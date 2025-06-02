@@ -37,3 +37,44 @@ services:
       - /usr/src/app/.next
     env_file:
       - ./apps/web_admin/.env
+
+  gateway_service:
+    build:
+      context: ./services/gateway_service
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./services/gateway_service:/app
+    environment:
+      - PYTHONPATH=/app
+
+  user_service:
+    build:
+      context: ./services/user_service
+    ports:
+      - "8001:8001"
+    volumes:
+      - ./services/user_service:/app
+    environment:
+      - PYTHONPATH=/app
+
+  ai_service:
+    build:
+      context: ./services/ai_service
+    ports:
+      - "8002:8002"
+    volumes:
+      - ./services/ai_service:/app
+    environment:
+      - PYTHONPATH=/app
+
+  notification_service:
+    build:
+      context: ./services/notification_service
+    ports:
+      - "8003:8003"
+    volumes:
+      - ./services/notification_service:/app
+    environment:
+      - PYTHONPATH=/app
