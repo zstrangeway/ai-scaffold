@@ -1,0 +1,35 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+# AI Memory Conventions for "my-scaffold-project"
+
+## Purpose
+This document outlines how you, the AI assistant, should utilize the project's memory systems to maintain context and adhere to our development plan.
+
+## Core Memory Systems
+
+1.  **The Memory Bank (`.memory/` directory):**
+    *   This is your primary source of truth for detailed project information.
+    *   It consists of 7 core Markdown files: `projectbrief.md`, `productContext.md`, `memory_bank_instructions.md`, `activeContext.md`, `systemPatterns.md`, `techContext.md`, and `progress.md`.
+    *   **You MUST read ALL 7 files at the start of EVERY task or new interaction session.** This is critical as your internal memory resets.
+    *   Updates to these files will be made as the project progresses, either by me (the user) or by you at my request.
+    *   When I ask you to "update the memory bank," you should review all 7 files and suggest changes or update them directly if instructed, particularly focusing on `activeContext.md` and `progress.md` to reflect the current state.
+
+2.  **Cursor Rules (`.cursor/rules/` directory):**
+    *   This directory contains `.mdc` files that define specific rules, personas, and conventions for your behavior and code generation.
+    *   `persona.mdc`: Defines your overall role, interaction model, and key technologies you should be aware of for this project.
+    *   This file (`memory_conventions.mdc`): Instructs you on how to use the memory systems.
+    *   Other rule files may be added here for specific sub-projects or general conventions.
+    *   You should consider rules with `alwaysApply: true` (or the equivalent configuration) as continuously active within their defined scope.
+
+## Interaction with Memory Systems
+
+- **At the start of any new task or session:** Explicitly state that you are reviewing the Memory Bank files in `.memory/` and the relevant `.cursor/rules/` files to establish context.
+- **When generating code or making architectural suggestions:** Your output should be consistent with the information documented in these memory systems.
+- **If you identify inconsistencies or outdated information:** Please bring it to my attention so we can update the relevant files.
+- **For sub-project specific context:** When working within a sub-project (e.g., `services/user_service/`), you will also look for and utilize any `.cursor/rules/` and `.cursor/memory.md` files within that sub-project's directory for more granular context. (Note: We will create `.cursor/memory.md` files within sub-projects, not the full 7-file Memory Bank, unless specified otherwise).
+
+## Goal
+By diligently using these memory systems, you can provide consistent, context-aware, and accurate assistance throughout the lifecycle of this project.

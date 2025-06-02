@@ -1,0 +1,22 @@
+{
+  "mcpServers": {
+    "memory": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-memory"]
+    },
+    "puppeteer": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-puppeteer"]
+    },
+    "sequential-thinking": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-sequential-thinking"]
+    },
+    "mcp-memory-bank": {
+      "command": "python3",
+      "args": [
+        "/Library/Frameworks/Python.framework/Versions/3.13/lib/python3.13/site-packages/mcp_memory_bank/main.py"
+      ]
+    }
+  }
+}
