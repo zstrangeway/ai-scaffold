@@ -6,6 +6,7 @@ import pytest
 from unittest.mock import Mock, patch, AsyncMock
 from fastapi.testclient import TestClient
 from fastapi import HTTPException
+import asyncio
 
 from app.main import app, lifespan
 
@@ -23,9 +24,16 @@ class TestMainApp:
     def test_app_has_cors_middleware(self):
         """Test that CORS middleware is configured"""
         # Check that middleware is present
-        middleware_types = [type(middleware) for middleware in app.user_middleware]
-        from starlette.middleware.cors import CORSMiddleware
-        assert CORSMiddleware in middleware_types
+        cors_middleware_found = False
+        for middleware in app.user_middleware:
+            # Check if this is CORS middleware by looking at the wrapped class
+            if hasattr(middleware, 'cls'):
+                from starlette.middleware.cors import CORSMiddleware
+                if middleware.cls == CORSMiddleware:
+                    cors_middleware_found = True
+                    break
+        
+        assert cors_middleware_found, "CORSMiddleware not found in app middleware"
 
     def test_app_includes_routers(self):
         """Test that routers are included"""
@@ -71,22 +79,24 @@ class TestMainApp:
     @patch('app.main.logger')
     def test_500_handler(self, mock_logger):
         """Test custom 500 handler"""
-        client = TestClient(app)
+        from fastapi import Request
+        from app.main import internal_error_handler
         
-        # Create a route that raises an exception to trigger 500 handler
-        @app.get("/test-500")
-        async def test_500():
-            raise Exception("Test error")
+        # Create a mock request and exception
+        mock_request = Mock()
+        mock_request.url.path = "/test-error"
+        test_exception = Exception("Test error")
         
-        response = client.get("/test-500")
+        # Test the handler directly
+        response = asyncio.get_event_loop().run_until_complete(
+            internal_error_handler(mock_request, test_exception)
+        )
         
         assert response.status_code == 500
-        data = response.json()
-        assert data["error"] == "Internal Server Error"
-        assert "unexpected error" in data["detail"]
+        assert response.body == b'{"error":"Internal Server Error","detail":"An unexpected error occurred"}'
         
         # Verify error was logged
-        mock_logger.error.assert_called()
+        mock_logger.error.assert_called_with("Internal server error: Test error")
 
     @pytest.mark.asyncio
     async def test_lifespan_startup_shutdown(self):

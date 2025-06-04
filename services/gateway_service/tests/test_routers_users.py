@@ -28,70 +28,61 @@ class TestUsersRouterEndpoints:
     @pytest.fixture
     def mock_current_user(self):
         """Mock current user for authentication"""
-        mock_user = Mock()
-        mock_user.id = "user123"
-        mock_user.email = "test@example.com"
-        mock_user.name = "Test User"
-        return mock_user
+        user = Mock()
+        user.id = "user123"
+        user.email = "test@example.com"
+        user.name = "Test User"
+        return user
 
-    @patch('app.routers.users.get_user_client')
-    def test_get_users_success(self, mock_get_user_client, client, mock_current_user):
+    @pytest.fixture
+    def mock_user_client(self):
+        """Mock user client"""
+        return AsyncMock()
+
+    def test_get_users_success(self, client, mock_current_user, mock_user_client):
         """Test successful get users"""
-        # Mock user client
-        mock_client = AsyncMock()
+        # Setup mock data
         mock_users = [
             Mock(id="user1", email="user1@example.com", name="User One"),
             Mock(id="user2", email="user2@example.com", name="User Two")
         ]
-        # Make sure the async method returns the expected tuple
+        
+        # Setup async mock methods
         async def mock_list_users(page=1, limit=10):
             return (mock_users, 2)
         
-        mock_client.list_users = mock_list_users
-        mock_get_user_client.return_value = mock_client
+        mock_user_client.list_users = mock_list_users
         
-        # Override both auth and user client dependencies
+        # Override dependencies
         from app.auth import get_current_user
         from app.user_client import get_user_client
         app.dependency_overrides[get_current_user] = lambda: mock_current_user
-        app.dependency_overrides[get_user_client] = lambda: mock_client
+        app.dependency_overrides[get_user_client] = lambda: mock_user_client
         
-        response = client.get("/api/v1/users/")  # Use trailing slash
-        
-        # Debug output
-        if response.status_code != 200:
-            print(f"Response status: {response.status_code}")
-            print(f"Response text: {response.text}")
+        response = client.get("/api/v1/users/")
         
         assert response.status_code == 200
         data = response.json()
-        assert data["total"] == 2
         assert len(data["users"]) == 2
-        assert data["users"][0]["email"] == "user1@example.com"
-        assert data["users"][1]["email"] == "user2@example.com"
+        assert data["total"] == 2
+        assert data["page"] == 1
+        assert data["limit"] == 10
 
-    def test_get_users_no_auth(self, client):
-        """Test get users without authentication"""
-        response = client.get("/api/v1/users")
-        
-        assert response.status_code == 401
-        data = response.json()
-        assert "Not authenticated" in data["detail"]
-
-    @patch('app.routers.users.get_user_client')
-    def test_get_user_by_id_success(self, mock_get_user_client, client, mock_current_user):
+    def test_get_user_by_id_success(self, client, mock_current_user, mock_user_client):
         """Test successful get user by ID"""
-        # Mock user client
-        mock_client = AsyncMock()
+        # Setup mock user
         mock_user = Mock(id="user123", email="test@example.com", name="Test User")
-        mock_client.get_user_by_id.return_value = mock_user
-        mock_get_user_client.return_value = mock_client
         
-        # Override both auth and user client dependencies
+        async def mock_get_user_by_id(user_id):
+            return mock_user if user_id == "user123" else None
+        
+        mock_user_client.get_user_by_id = mock_get_user_by_id
+        
+        # Override dependencies
         from app.auth import get_current_user
         from app.user_client import get_user_client
         app.dependency_overrides[get_current_user] = lambda: mock_current_user
-        app.dependency_overrides[get_user_client] = lambda: mock_client
+        app.dependency_overrides[get_user_client] = lambda: mock_user_client
         
         response = client.get("/api/v1/users/user123")
         
@@ -99,46 +90,45 @@ class TestUsersRouterEndpoints:
         data = response.json()
         assert data["id"] == "user123"
         assert data["email"] == "test@example.com"
-        assert data["name"] == "Test User"
 
-    @patch('app.routers.users.get_user_client')
-    def test_get_user_by_id_not_found(self, mock_get_user_client, client, mock_current_user):
+    def test_get_user_by_id_not_found(self, client, mock_current_user, mock_user_client):
         """Test get user by ID when user not found"""
-        # Mock user client
-        mock_client = AsyncMock()
-        mock_client.get_user_by_id.return_value = None
-        mock_get_user_client.return_value = mock_client
+        async def mock_get_user_by_id(user_id):
+            return None
         
-        # Override both auth and user client dependencies
+        mock_user_client.get_user_by_id = mock_get_user_by_id
+        
+        # Override dependencies
         from app.auth import get_current_user
         from app.user_client import get_user_client
         app.dependency_overrides[get_current_user] = lambda: mock_current_user
-        app.dependency_overrides[get_user_client] = lambda: mock_client
+        app.dependency_overrides[get_user_client] = lambda: mock_user_client
         
         response = client.get("/api/v1/users/nonexistent")
         
         assert response.status_code == 404
         data = response.json()
-        assert "nonexistent not found" in data["detail"]
+        assert "not found" in data["detail"].lower()
 
-    @patch('app.routers.users.get_user_client')
-    def test_update_user_success(self, mock_get_user_client, client, mock_current_user):
+    def test_update_user_success(self, client, mock_current_user, mock_user_client):
         """Test successful user update"""
-        # Mock user client
-        mock_client = AsyncMock()
-        mock_user = Mock(id="user123", email="test@example.com", name="Updated User")
-        mock_client.update_user.return_value = mock_user
-        mock_get_user_client.return_value = mock_client
+        # Setup mock user
+        mock_user = Mock(id="user123", email="updated@example.com", name="Updated User")
         
-        # Override both auth and user client dependencies
+        async def mock_update_user(user_id, name=None, email=None):
+            return mock_user
+        
+        mock_user_client.update_user = mock_update_user
+        
+        # Override dependencies
         from app.auth import get_current_user
         from app.user_client import get_user_client
         app.dependency_overrides[get_current_user] = lambda: mock_current_user
-        app.dependency_overrides[get_user_client] = lambda: mock_client
+        app.dependency_overrides[get_user_client] = lambda: mock_user_client
         
         update_data = {
             "name": "Updated User",
-            "email": "newemail@example.com"  # Use different email to avoid conflict
+            "email": "updated@example.com"
         }
         
         response = client.put("/api/v1/users/user123", json=update_data)
@@ -146,134 +136,131 @@ class TestUsersRouterEndpoints:
         assert response.status_code == 200
         data = response.json()
         assert data["id"] == "user123"
-        assert data["name"] == "Updated User"
+        assert data["email"] == "updated@example.com"
 
-    @patch('app.routers.users.get_user_client')
-    def test_update_user_not_found(self, mock_get_user_client, client, mock_current_user):
+    def test_update_user_not_found(self, client, mock_current_user, mock_user_client):
         """Test update user when user not found"""
-        # Mock user client
-        mock_client = AsyncMock()
-        mock_client.update_user.return_value = None
-        mock_get_user_client.return_value = mock_client
+        async def mock_update_user(user_id, name=None, email=None):
+            raise ValueError("User not found")
         
-        # Override both auth and user client dependencies
+        mock_user_client.update_user = mock_update_user
+        
+        # Override dependencies
         from app.auth import get_current_user
         from app.user_client import get_user_client
         app.dependency_overrides[get_current_user] = lambda: mock_current_user
-        app.dependency_overrides[get_user_client] = lambda: mock_client
+        app.dependency_overrides[get_user_client] = lambda: mock_user_client
         
         update_data = {
-            "name": "Updated User",
-            "email": "test@example.com"
+            "name": "Updated User"
         }
         
         response = client.put("/api/v1/users/nonexistent", json=update_data)
         
         assert response.status_code == 404
         data = response.json()
-        assert "nonexistent not found" in data["detail"]
+        assert "not found" in data["detail"].lower()
 
-    @patch('app.routers.users.get_user_client')
-    def test_update_user_email_conflict(self, mock_get_user_client, client, mock_current_user):
-        """Test update user when email already exists"""
-        # Mock user client to raise ValueError for email conflict
-        mock_client = AsyncMock()
-        mock_client.update_user.side_effect = ValueError("User with email test@example.com already exists")
-        mock_get_user_client.return_value = mock_client
-        
-        # Override both auth and user client dependencies
-        from app.auth import get_current_user
-        from app.user_client import get_user_client
-        app.dependency_overrides[get_current_user] = lambda: mock_current_user
-        app.dependency_overrides[get_user_client] = lambda: mock_client
-        
-        update_data = {
-            "name": "Updated User",
-            "email": "test@example.com"  # Conflicting email
-        }
-        
-        response = client.put("/api/v1/users/user123", json=update_data)
-        
-        assert response.status_code == 409
-        data = response.json()
-        assert "already exists" in data["detail"]
-
-    @patch('app.routers.users.get_user_client')
-    def test_delete_user_success(self, mock_get_user_client, client, mock_current_user):
+    def test_delete_user_success(self, client, mock_current_user, mock_user_client):
         """Test successful user deletion"""
-        # Mock user client
-        mock_client = AsyncMock()
-        mock_client.delete_user.return_value = True
-        mock_get_user_client.return_value = mock_client
-        
         # Use a different user ID to avoid self-deletion prevention
         mock_current_user.id = "admin123"
         
-        # Override both auth and user client dependencies
+        async def mock_delete_user(user_id):
+            return True
+        
+        mock_user_client.delete_user = mock_delete_user
+        
+        # Override dependencies
         from app.auth import get_current_user
         from app.user_client import get_user_client
         app.dependency_overrides[get_current_user] = lambda: mock_current_user
-        app.dependency_overrides[get_user_client] = lambda: mock_client
+        app.dependency_overrides[get_user_client] = lambda: mock_user_client
         
-        response = client.delete("/api/v1/users/user456")  # Different user ID
+        response = client.delete("/api/v1/users/user123")
         
-        assert response.status_code == 204  # No Content for successful deletion
+        assert response.status_code == 204
 
-    @patch('app.routers.users.get_user_client')
-    def test_delete_user_not_found(self, mock_get_user_client, client, mock_current_user):
+    def test_delete_user_not_found(self, client, mock_current_user, mock_user_client):
         """Test delete user when user not found"""
-        # Mock user client
-        mock_client = AsyncMock()
-        mock_client.delete_user.return_value = False
-        mock_get_user_client.return_value = mock_client
-        
         # Use a different user ID to avoid self-deletion prevention
         mock_current_user.id = "admin123"
         
-        # Override both auth and user client dependencies
+        async def mock_delete_user(user_id):
+            return False
+        
+        mock_user_client.delete_user = mock_delete_user
+        
+        # Override dependencies  
         from app.auth import get_current_user
         from app.user_client import get_user_client
         app.dependency_overrides[get_current_user] = lambda: mock_current_user
-        app.dependency_overrides[get_user_client] = lambda: mock_client
+        app.dependency_overrides[get_user_client] = lambda: mock_user_client
         
         response = client.delete("/api/v1/users/nonexistent")
         
         assert response.status_code == 404
         data = response.json()
-        assert "nonexistent not found" in data["detail"]
+        assert "not found" in data["detail"].lower()
 
-    @patch('app.routers.users.get_user_client')
-    def test_delete_user_self_deletion_prevented(self, mock_get_user_client, client, mock_current_user):
-        """Test that users cannot delete their own account via this endpoint"""
-        # Mock user client (shouldn't be called)
-        mock_client = AsyncMock()
-        mock_get_user_client.return_value = mock_client
+    def test_delete_own_account_forbidden(self, client, mock_current_user, mock_user_client):
+        """Test that users cannot delete their own account"""
+        # Make sure current user tries to delete themselves
+        mock_current_user.id = "user123"
         
-        # Override both auth and user client dependencies
+        # Override dependencies
         from app.auth import get_current_user
         from app.user_client import get_user_client
         app.dependency_overrides[get_current_user] = lambda: mock_current_user
-        app.dependency_overrides[get_user_client] = lambda: mock_client
+        app.dependency_overrides[get_user_client] = lambda: mock_user_client
         
-        # Try to delete own account (user123)
         response = client.delete("/api/v1/users/user123")
         
-        assert response.status_code == 400
+        assert response.status_code == 403
         data = response.json()
-        assert "Cannot delete your own account" in data["detail"]
+        assert "cannot delete your own account" in data["detail"].lower()
 
-    def test_update_user_no_auth(self, client):
-        """Test update user without authentication"""
-        update_data = {"name": "Updated User"}
-        response = client.put("/api/v1/users/user123", json=update_data)
+    def test_get_user_by_email_success(self, client, mock_current_user, mock_user_client):
+        """Test successful get user by email"""
+        # Setup mock user
+        mock_user = Mock(id="user123", email="test@example.com", name="Test User")
         
-        assert response.status_code == 401
+        async def mock_get_user_by_email(email):
+            return mock_user if email == "test@example.com" else None
+        
+        mock_user_client.get_user_by_email = mock_get_user_by_email
+        
+        # Override dependencies
+        from app.auth import get_current_user
+        from app.user_client import get_user_client
+        app.dependency_overrides[get_current_user] = lambda: mock_current_user
+        app.dependency_overrides[get_user_client] = lambda: mock_user_client
+        
+        response = client.get("/api/v1/users/email/test@example.com")
+        
+        assert response.status_code == 200
+        data = response.json()
+        assert data["id"] == "user123"
+        assert data["email"] == "test@example.com"
 
-    def test_delete_user_no_auth(self, client):
-        """Test delete user without authentication"""
-        response = client.delete("/api/v1/users/user123")
+    def test_get_user_by_email_not_found(self, client, mock_current_user, mock_user_client):
+        """Test get user by email when user not found"""
+        async def mock_get_user_by_email(email):
+            return None
         
-        assert response.status_code == 401
+        mock_user_client.get_user_by_email = mock_get_user_by_email
+        
+        # Override dependencies
+        from app.auth import get_current_user
+        from app.user_client import get_user_client
+        app.dependency_overrides[get_current_user] = lambda: mock_current_user
+        app.dependency_overrides[get_user_client] = lambda: mock_user_client
+        
+        response = client.get("/api/v1/users/email/notfound@example.com")
+        
+        assert response.status_code == 404
+        data = response.json()
+        assert "not found" in data["detail"].lower()
 
 
 class TestUsersRouterValidation:

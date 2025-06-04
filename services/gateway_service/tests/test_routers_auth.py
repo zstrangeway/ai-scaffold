@@ -63,8 +63,13 @@ class TestAuthRouterEndpoints:
         mock_existing_user = Mock()
         mock_existing_user.id = "existing123"
         mock_existing_user.email = "test@example.com"
-        mock_client.get_user_by_email.return_value = mock_existing_user
-        # Don't mock create_user_with_password since it shouldn't be called
+        mock_existing_user.name = "Existing User"
+        
+        # Setup the mock to return existing user
+        async def mock_get_user_by_email(email):
+            return mock_existing_user
+        
+        mock_client.get_user_by_email = mock_get_user_by_email
         mock_get_user_client.return_value = mock_client
         
         # Also override the dependency injection
@@ -78,6 +83,11 @@ class TestAuthRouterEndpoints:
         }
         
         response = client.post("/api/v1/auth/register", json=user_data)
+        
+        # Debug output if test fails
+        if response.status_code != 409:
+            print(f"Expected 409, got {response.status_code}")
+            print(f"Response: {response.text}")
         
         assert response.status_code == 409
         data = response.json()
