@@ -3,6 +3,8 @@ from unittest.mock import Mock, patch
 from sqlalchemy.exc import IntegrityError
 from app.repository import UserRepository
 from app.models import User
+from typing import List, Optional
+from sqlalchemy.orm import Session
 
 
 class TestUserRepository:
@@ -170,4 +172,122 @@ class TestUserRepository:
         # Verify offset and limit were called with correct values
         # Page 2 with limit 5 should offset by 5
         mock_session.query.return_value.offset.assert_called_with(5)
-        mock_session.query.return_value.offset.return_value.limit.assert_called_with(5) 
+        mock_session.query.return_value.offset.return_value.limit.assert_called_with(5)
+
+    def test_create_user_with_password_success(self, user_repo, mock_session):
+        """Test creating user with password"""
+        # Mock successful user creation
+        mock_user = User(name="John Doe", email="john@example.com")
+        mock_user.set_password = Mock()
+        mock_user.has_password = Mock(return_value=True)
+        mock_user.verify_password = Mock(side_effect=lambda pwd: pwd == "password123")
+        
+        mock_session.add.return_value = None
+        mock_session.commit.return_value = None
+        mock_session.refresh.return_value = None
+        
+        # Mock the User constructor
+        with patch('app.repository.User', return_value=mock_user):
+            user = user_repo.create_with_password("John Doe", "john@example.com", "password123")
+            
+            assert user == mock_user
+            mock_user.set_password.assert_called_once_with("password123")
+
+    def test_create_user_with_password_duplicate_email(self, user_repo, mock_session):
+        """Test creating user with duplicate email"""
+        mock_session.add.return_value = None
+        mock_session.commit.side_effect = IntegrityError("", "", "")
+        mock_session.rollback.return_value = None
+        
+        with patch('app.repository.User'):
+            with pytest.raises(ValueError, match="already exists"):
+                user_repo.create_with_password("Jane Doe", "john@example.com", "different123")
+            
+            mock_session.rollback.assert_called_once()
+
+    def test_update_password_success(self, user_repo, mock_session):
+        """Test updating user password"""
+        # Mock existing user with password
+        mock_user = Mock()
+        mock_user.has_password.return_value = True
+        mock_user.verify_password.return_value = True
+        mock_user.set_password = Mock()
+        
+        mock_session.query.return_value.filter.return_value.first.return_value = mock_user
+        mock_session.commit.return_value = None
+        
+        success = user_repo.update_password("user-id", "oldpassword", "newpassword")
+        
+        assert success is True
+        mock_user.verify_password.assert_called_once_with("oldpassword")
+        mock_user.set_password.assert_called_once_with("newpassword")
+        mock_session.commit.assert_called_once()
+
+    def test_update_password_wrong_current(self, user_repo, mock_session):
+        """Test updating password with wrong current password"""
+        # Mock existing user with password
+        mock_user = Mock()
+        mock_user.has_password.return_value = True
+        mock_user.verify_password.return_value = False  # Wrong password
+        
+        mock_session.query.return_value.filter.return_value.first.return_value = mock_user
+        
+        success = user_repo.update_password("user-id", "wrongpassword", "newpassword")
+        
+        assert success is False
+        mock_user.verify_password.assert_called_once_with("wrongpassword")
+
+    def test_update_password_nonexistent_user(self, user_repo, mock_session):
+        """Test updating password for nonexistent user"""
+        mock_session.query.return_value.filter.return_value.first.return_value = None
+        
+        success = user_repo.update_password("nonexistent-id", "anypassword", "newpassword")
+        
+        assert success is False
+
+    def test_verify_user_password_success(self, user_repo, mock_session):
+        """Test verifying user password"""
+        # Mock existing user with password
+        mock_user = Mock()
+        mock_user.has_password.return_value = True
+        mock_user.verify_password.return_value = True
+        
+        mock_session.query.return_value.filter.return_value.first.return_value = mock_user
+        
+        result = user_repo.verify_user_password("john@example.com", "password123")
+        
+        assert result == mock_user
+        mock_user.verify_password.assert_called_once_with("password123")
+
+    def test_verify_user_password_wrong_password(self, user_repo, mock_session):
+        """Test verifying with wrong password"""
+        # Mock existing user with password
+        mock_user = Mock()
+        mock_user.has_password.return_value = True
+        mock_user.verify_password.return_value = False
+        
+        mock_session.query.return_value.filter.return_value.first.return_value = mock_user
+        
+        result = user_repo.verify_user_password("john@example.com", "wrongpassword")
+        
+        assert result is None
+
+    def test_verify_user_password_no_password(self, user_repo, mock_session):
+        """Test verifying user that has no password"""
+        # Mock existing user without password
+        mock_user = Mock()
+        mock_user.has_password.return_value = False
+        
+        mock_session.query.return_value.filter.return_value.first.return_value = mock_user
+        
+        result = user_repo.verify_user_password("john@example.com", "anypassword")
+        
+        assert result is None
+
+    def test_verify_user_password_nonexistent_user(self, user_repo, mock_session):
+        """Test verifying nonexistent user"""
+        mock_session.query.return_value.filter.return_value.first.return_value = None
+        
+        result = user_repo.verify_user_password("nonexistent@example.com", "password123")
+        
+        assert result is None 

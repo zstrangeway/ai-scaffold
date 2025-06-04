@@ -9,7 +9,10 @@ service UserService {
     rpc GetUserById(GetUserByIdRequest) returns (GetUserByIdResponse);
     rpc GetUserByEmail(GetUserByEmailRequest) returns (GetUserByEmailResponse);
     rpc CreateUser(CreateUserRequest) returns (CreateUserResponse);
+    rpc CreateUserWithPassword(CreateUserWithPasswordRequest) returns (CreateUserWithPasswordResponse);
     rpc UpdateUser(UpdateUserRequest) returns (UpdateUserResponse);
+    rpc UpdateUserPassword(UpdateUserPasswordRequest) returns (UpdateUserPasswordResponse);
+    rpc VerifyUserPassword(VerifyUserPasswordRequest) returns (VerifyUserPasswordResponse);
     rpc DeleteUser(DeleteUserRequest) returns (DeleteUserResponse);
     rpc ListUsers(ListUsersRequest) returns (ListUsersResponse);
 }
@@ -34,7 +37,7 @@ message GetUserByEmailResponse {
     User user = 1;
 }
 
-// Create User Request
+// Create User Request (without password - for basic user creation)
 message CreateUserRequest {
     string name = 1;
     string email = 2;
@@ -42,6 +45,18 @@ message CreateUserRequest {
 
 // Create User Response
 message CreateUserResponse {
+    User user = 1;
+}
+
+// Create User With Password Request (for authentication-enabled users)
+message CreateUserWithPasswordRequest {
+    string name = 1;
+    string email = 2;
+    string password = 3;
+}
+
+// Create User With Password Response
+message CreateUserWithPasswordResponse {
     User user = 1;
 }
 
@@ -55,6 +70,30 @@ message UpdateUserRequest {
 // Update User Response
 message UpdateUserResponse {
     User user = 1;
+}
+
+// Update User Password Request
+message UpdateUserPasswordRequest {
+    string id = 1;
+    string current_password = 2;
+    string new_password = 3;
+}
+
+// Update User Password Response
+message UpdateUserPasswordResponse {
+    bool success = 1;
+}
+
+// Verify User Password Request
+message VerifyUserPasswordRequest {
+    string email = 1;
+    string password = 2;
+}
+
+// Verify User Password Response
+message VerifyUserPasswordResponse {
+    bool valid = 1;
+    User user = 2;  // Only populated if password is valid
 }
 
 // Delete User Request
@@ -81,9 +120,11 @@ message ListUsersResponse {
     int32 limit = 4;
 }
 
-// User Message
+// User Message (public information only - no password)
 message User {
   string id = 1;
   string name = 2;
   string email = 3;
+  string created_at = 4;
+  string updated_at = 5;
 }

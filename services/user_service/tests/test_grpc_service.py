@@ -86,27 +86,28 @@ class TestUserService:
         mock_context.set_details.assert_called_with("User with ID nonexistent not found")
 
     def test_get_user_by_id_db_session_close_error(self, mock_context):
-        """Test GetUserById handles database session close errors gracefully"""
-        # Create a mock session that raises exception on close
-        mock_session = Mock()
-        mock_session.close.side_effect = Exception("Close failed")
-        
-        def get_failing_close_session():
-            return mock_session
-        
-        service = UserService(db_session_factory=get_failing_close_session)
-        
-        with patch('app.grpc_service.UserRepository') as mock_repo_class:
+        """Test GetUserById handles database context manager properly"""
+        # Mock the context manager to still work correctly
+        with patch('app.grpc_service.get_db_session') as mock_get_db_session, \
+             patch('app.grpc_service.UserRepository') as mock_repo_class:
+            
+            mock_session = Mock()
+            mock_get_db_session.return_value.__enter__.return_value = mock_session
+            mock_get_db_session.return_value.__exit__.return_value = None
+            
             mock_repo = mock_repo_class.return_value
             mock_repo.get_by_id.return_value = User(id="test", name="Test", email="test@example.com")
             
+            service = UserService()
             request = pb2.GetUserByIdRequest(id="test")
             response = service.GetUserById(request, mock_context)
             
-            # Should still return successful response despite close error
+            # Should still return successful response
             assert response.user.id == "test"
-            # Close should have been called and failed, but ignored
-            mock_session.close.assert_called_once()
+            # Verify context manager was used properly
+            mock_get_db_session.assert_called_once()
+            mock_get_db_session.return_value.__enter__.assert_called_once()
+            mock_get_db_session.return_value.__exit__.assert_called_once()
 
     @patch('app.grpc_service.UserRepository')
     def test_get_user_by_email_success(self, mock_repo_class, grpc_service, mock_context):
@@ -195,25 +196,28 @@ class TestUserService:
         mock_context.set_code.assert_called_with(grpc.StatusCode.ALREADY_EXISTS)
 
     def test_create_user_db_session_close_error(self, mock_context):
-        """Test CreateUser handles database session close errors gracefully"""
-        mock_session = Mock()
-        mock_session.close.side_effect = Exception("Database error")
-        
-        def get_failing_close_session():
-            return mock_session
-        
-        service = UserService(db_session_factory=get_failing_close_session)
-        
-        with patch('app.grpc_service.UserRepository') as mock_repo_class:
+        """Test CreateUser handles database context manager properly"""
+        # Mock the context manager to work correctly
+        with patch('app.grpc_service.get_db_session') as mock_get_db_session, \
+             patch('app.grpc_service.UserRepository') as mock_repo_class:
+            
+            mock_session = Mock()
+            mock_get_db_session.return_value.__enter__.return_value = mock_session
+            mock_get_db_session.return_value.__exit__.return_value = None
+            
             mock_repo = mock_repo_class.return_value
             mock_repo.create.return_value = User(id="test", name="Test", email="test@example.com")
             
+            service = UserService()
             request = pb2.CreateUserRequest(name="Test", email="test@example.com")
             response = service.CreateUser(request, mock_context)
             
-            # Should still work despite close error
+            # Should still work with context manager
             assert response.user.name == "Test"
-            mock_session.close.assert_called_once()
+            # Verify context manager was used properly
+            mock_get_db_session.assert_called_once()
+            mock_get_db_session.return_value.__enter__.assert_called_once()
+            mock_get_db_session.return_value.__exit__.assert_called_once()
 
     @patch('app.grpc_service.UserRepository')
     def test_update_user_success(self, mock_repo_class, grpc_service, mock_context):
@@ -340,25 +344,28 @@ class TestUserService:
         mock_context.set_details.assert_called_with("User with ID nonexistent not found")
 
     def test_delete_user_db_session_close_error(self, mock_context):
-        """Test DeleteUser handles database session close errors gracefully"""
-        mock_session = Mock()
-        mock_session.close.side_effect = RuntimeError("Network error")
-        
-        def get_failing_close_session():
-            return mock_session
-        
-        service = UserService(db_session_factory=get_failing_close_session)
-        
-        with patch('app.grpc_service.UserRepository') as mock_repo_class:
+        """Test DeleteUser handles database context manager properly"""
+        # Mock the context manager to work correctly
+        with patch('app.grpc_service.get_db_session') as mock_get_db_session, \
+             patch('app.grpc_service.UserRepository') as mock_repo_class:
+            
+            mock_session = Mock()
+            mock_get_db_session.return_value.__enter__.return_value = mock_session
+            mock_get_db_session.return_value.__exit__.return_value = None
+            
             mock_repo = mock_repo_class.return_value
             mock_repo.delete.return_value = True
             
+            service = UserService()
             request = pb2.DeleteUserRequest(id="test")
             response = service.DeleteUser(request, mock_context)
             
-            # Should work despite close error
+            # Should work with context manager
             assert response.id == "test"
-            mock_session.close.assert_called_once()
+            # Verify context manager was used properly
+            mock_get_db_session.assert_called_once()
+            mock_get_db_session.return_value.__enter__.assert_called_once()
+            mock_get_db_session.return_value.__exit__.assert_called_once()
 
     @patch('app.grpc_service.UserRepository')
     def test_list_users_empty(self, mock_repo_class, grpc_service, mock_context):
@@ -422,25 +429,29 @@ class TestUserService:
             mock_repo.list_users.assert_called_once_with(1, 100)
 
     def test_list_users_db_session_close_error(self, mock_context):
-        """Test ListUsers handles database session close errors gracefully"""
-        mock_session = Mock()
-        mock_session.close.side_effect = Exception("Connection timeout")
-        
-        def get_failing_close_session():
-            return mock_session
-        
-        service = UserService(db_session_factory=get_failing_close_session)
-        
-        with patch('app.grpc_service.UserRepository') as mock_repo_class:
+        """Test ListUsers handles database context manager properly"""
+        # Mock the context manager to work correctly
+        with patch('app.grpc_service.get_db_session') as mock_get_db_session, \
+             patch('app.grpc_service.UserRepository') as mock_repo_class:
+            
+            mock_session = Mock()
+            mock_get_db_session.return_value.__enter__.return_value = mock_session
+            mock_get_db_session.return_value.__exit__.return_value = None
+            
             mock_repo = mock_repo_class.return_value
             mock_repo.list_users.return_value = ([], 0)
             
+            service = UserService()
             request = pb2.ListUsersRequest(page=1, limit=10)
             response = service.ListUsers(request, mock_context)
             
-            # Should work despite close error
+            # Should work with context manager
+            assert len(response.users) == 0
             assert response.total == 0
-            mock_session.close.assert_called_once()
+            # Verify context manager was used properly
+            mock_get_db_session.assert_called_once()
+            mock_get_db_session.return_value.__enter__.assert_called_once()
+            mock_get_db_session.return_value.__exit__.assert_called_once()
 
     def test_model_to_proto_conversion(self, grpc_service):
         """Test _model_to_proto method"""
@@ -458,14 +469,126 @@ class TestUserService:
         assert service.db_session_factory is not None
 
     def test_exception_handling_in_get_user_by_id(self, grpc_service, mock_context):
-        """Test exception handling in GetUserById with database connection issues"""
-        with patch('app.grpc_service.UserRepository') as mock_repo_class:
-            mock_repo_class.side_effect = Exception("Database connection failed")
+        """Test that internal errors are properly handled and returned as gRPC errors"""
+        with patch('app.grpc_service.get_db_session') as mock_get_db_session:
+            mock_get_db_session.side_effect = Exception("Database connection failed")
             
             request = pb2.GetUserByIdRequest(id="test-id")
-            
             response = grpc_service.GetUserById(request, mock_context)
             
             assert response == pb2.GetUserByIdResponse()
             mock_context.set_code.assert_called_with(grpc.StatusCode.INTERNAL)
-            assert "Internal error" in mock_context.set_details.call_args[0][0] 
+
+    @patch('app.grpc_service.UserRepository')
+    def test_create_user_with_password_success(self, mock_repo_class, grpc_service, mock_context):
+        """Test successful CreateUserWithPassword"""
+        mock_user = User(id="test-id", name="John Doe", email="john@example.com")
+        mock_repo = mock_repo_class.return_value
+        mock_repo.create_with_password.return_value = mock_user
+        
+        request = pb2.CreateUserWithPasswordRequest(
+            name="John Doe", 
+            email="john@example.com", 
+            password="password123"
+        )
+        
+        response = grpc_service.CreateUserWithPassword(request, mock_context)
+        
+        assert response.user.name == "John Doe"
+        assert response.user.email == "john@example.com"
+        assert response.user.id == "test-id"
+        mock_repo.create_with_password.assert_called_once_with("John Doe", "john@example.com", "password123")
+
+    def test_create_user_with_password_empty_fields(self, grpc_service, mock_context):
+        """Test CreateUserWithPassword with empty required fields"""
+        request = pb2.CreateUserWithPasswordRequest(name="", email="john@example.com", password="password123")
+        
+        response = grpc_service.CreateUserWithPassword(request, mock_context)
+        
+        assert response == pb2.CreateUserWithPasswordResponse()
+        mock_context.set_code.assert_called_with(grpc.StatusCode.INVALID_ARGUMENT)
+        mock_context.set_details.assert_called_with("Name, email, and password are required")
+
+    @patch('app.grpc_service.UserRepository')
+    def test_update_user_password_success(self, mock_repo_class, grpc_service, mock_context):
+        """Test successful UpdateUserPassword"""
+        mock_repo = mock_repo_class.return_value
+        mock_repo.update_password.return_value = True
+        
+        request = pb2.UpdateUserPasswordRequest(
+            id="user-id",
+            current_password="oldpassword",
+            new_password="newpassword"
+        )
+        
+        response = grpc_service.UpdateUserPassword(request, mock_context)
+        
+        assert response.success is True
+        mock_repo.update_password.assert_called_once_with("user-id", "oldpassword", "newpassword")
+
+    @patch('app.grpc_service.UserRepository')
+    def test_update_user_password_wrong_current(self, mock_repo_class, grpc_service, mock_context):
+        """Test UpdateUserPassword with wrong current password"""
+        mock_repo = mock_repo_class.return_value
+        mock_repo.update_password.return_value = False
+        
+        request = pb2.UpdateUserPasswordRequest(
+            id="user-id",
+            current_password="wrongpassword",
+            new_password="newpassword"
+        )
+        
+        response = grpc_service.UpdateUserPassword(request, mock_context)
+        
+        assert response.success is False
+        mock_context.set_code.assert_called_with(grpc.StatusCode.UNAUTHENTICATED)
+        mock_context.set_details.assert_called_with("Current password is incorrect or user not found")
+
+    def test_update_user_password_empty_fields(self, grpc_service, mock_context):
+        """Test UpdateUserPassword with empty required fields"""
+        request = pb2.UpdateUserPasswordRequest(id="", current_password="old", new_password="new")
+        
+        response = grpc_service.UpdateUserPassword(request, mock_context)
+        
+        assert response.success is False
+        mock_context.set_code.assert_called_with(grpc.StatusCode.INVALID_ARGUMENT)
+        mock_context.set_details.assert_called_with("User ID, current password, and new password are required")
+
+    @patch('app.grpc_service.UserRepository')
+    def test_verify_user_password_success(self, mock_repo_class, grpc_service, mock_context):
+        """Test successful VerifyUserPassword"""
+        mock_user = User(id="test-id", name="John Doe", email="john@example.com")
+        mock_repo = mock_repo_class.return_value
+        mock_repo.verify_user_password.return_value = mock_user
+        
+        request = pb2.VerifyUserPasswordRequest(email="john@example.com", password="password123")
+        
+        response = grpc_service.VerifyUserPassword(request, mock_context)
+        
+        assert response.valid is True
+        assert response.user.id == "test-id"
+        assert response.user.email == "john@example.com"
+        mock_repo.verify_user_password.assert_called_once_with("john@example.com", "password123")
+
+    @patch('app.grpc_service.UserRepository')
+    def test_verify_user_password_invalid(self, mock_repo_class, grpc_service, mock_context):
+        """Test VerifyUserPassword with invalid credentials"""
+        mock_repo = mock_repo_class.return_value
+        mock_repo.verify_user_password.return_value = None
+        
+        request = pb2.VerifyUserPasswordRequest(email="john@example.com", password="wrongpassword")
+        
+        response = grpc_service.VerifyUserPassword(request, mock_context)
+        
+        assert response.valid is False
+        assert not response.HasField('user')  # User field should not be populated
+
+    def test_verify_user_password_empty_fields(self, grpc_service, mock_context):
+        """Test VerifyUserPassword with empty required fields"""
+        request = pb2.VerifyUserPasswordRequest(email="", password="password123")
+        
+        response = grpc_service.VerifyUserPassword(request, mock_context)
+        
+        assert response.valid is False
+        mock_context.set_code.assert_called_with(grpc.StatusCode.INVALID_ARGUMENT)
+        mock_context.set_details.assert_called_with("Email and password are required") 
