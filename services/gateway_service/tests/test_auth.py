@@ -3,7 +3,7 @@ Unit tests for auth.py
 """
 
 import pytest
-from unittest.mock import patch, Mock, MagicMock
+from unittest.mock import patch, Mock, MagicMock, AsyncMock
 from datetime import datetime, timedelta, timezone
 from fastapi import HTTPException, Request, Response
 from fastapi.security import HTTPAuthorizationCredentials
@@ -18,6 +18,15 @@ from app.auth import (
     set_auth_cookie, clear_auth_cookie,
     COOKIE_NAME, COOKIE_MAX_AGE
 )
+
+
+@pytest.fixture(autouse=True)
+def clear_user_client():
+    """Clear the global user client before each test"""
+    import app.user_client
+    app.user_client._user_client = None
+    yield
+    app.user_client._user_client = None
 
 
 class TestPasswordUtilities:
@@ -339,18 +348,26 @@ class TestCurrentUserDependencies:
         assert exc_info.value.status_code == 401
         assert "Not authenticated" in str(exc_info.value.detail)
 
-    @patch('app.auth.get_current_user_token')
-    async def test_get_current_user_success(self, mock_get_token):
+    @patch('app.auth.get_user_client')
+    async def test_get_current_user_success(self, mock_get_user_client):
         """Test get_current_user with valid token data"""
+        # Mock user client
+        mock_client = AsyncMock()
+        mock_user = Mock()
+        mock_user.id = "user123"
+        mock_user.email = "test@example.com"
+        mock_user.name = "Test User"
+        mock_client.get_user_by_id.return_value = mock_user
+        mock_get_user_client.return_value = mock_client
+        
         mock_token_data = TokenData(user_id="user123", email="test@example.com")
-        mock_get_token.return_value = mock_token_data
         
         result = await get_current_user(mock_token_data)
         
         assert isinstance(result, AuthUser)
         assert result.id == "user123"
         assert result.email == "test@example.com"
-        assert result.name == "User"  # Default placeholder
+        assert result.name == "Test User"
 
     @patch('app.auth.get_current_user_token')
     async def test_get_current_user_no_user_id(self, mock_get_token):

@@ -749,6 +749,24 @@ files = [
 ]
 
 [[package]]
+name = "my-scaffold-api-contracts"
+version = "0.1.0"
+description = "Generated Python API contracts for my-scaffold-project"
+optional = false
+python-versions = "^3.10"
+groups = ["main"]
+files = []
+develop = true
+
+[package.dependencies]
+grpcio = "^1.60.0"
+protobuf = "^6.31.0"
+
+[package.source]
+type = "directory"
+url = "../../packages/api-contracts/generated/py"
+
+[[package]]
 name = "packaging"
 version = "25.0"
 description = "Core utilities for Python packages"
@@ -1580,4 +1598,4 @@ files = [
 [metadata]
 lock-version = "2.1"
 python-versions = "^3.10"
-content-hash = "0c9ea0745a1dfb42a1e1823dc57e65ddea12599afecfeec8b031c1e8cfb42ab4"
+content-hash = "bc7e0409b19120e2f68f49f7b8158daeff225c6d52c9141a01dd907052a0ade5"

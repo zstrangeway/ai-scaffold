@@ -12,7 +12,8 @@ from typing import Optional
 
 from ..auth import (
     Token, AuthUser, get_current_user, create_token_response,
-    get_password_hash, verify_password, set_auth_cookie, clear_auth_cookie
+    get_password_hash, verify_password, set_auth_cookie, clear_auth_cookie,
+    authenticate_user
 )
 from ..user_client import get_user_client, UserServiceClient
 
@@ -107,7 +108,7 @@ async def register(
     """
     Register a new user (Token-based for mobile apps)
     
-    Creates a new user account and returns a JWT access token.
+    Creates a new user account with password and returns a JWT access token.
     Store this token and send it in the Authorization header for subsequent requests.
     
     Args:
@@ -129,16 +130,11 @@ async def register(
                 detail="Email address is already registered"
             )
 
-        # Hash password (Note: This is a placeholder - in a real system, 
-        # password hashing would be handled by the user service)
-        hashed_password = get_password_hash(user_data.password)
-        
-        # Create user in user service
-        # Note: The current user service doesn't support passwords yet
-        # This is a design consideration for future implementation
-        created_user = await user_client.create_user(
+        # Create user with password in user service
+        created_user = await user_client.create_user_with_password(
             name=user_data.name,
-            email=user_data.email
+            email=user_data.email,
+            password=user_data.password
         )
         
         if not created_user:
@@ -164,8 +160,7 @@ async def register(
 
 @router.post("/login", response_model=Token)
 async def login(
-    form_data: OAuth2PasswordRequestForm = Depends(),
-    user_client: UserServiceClient = Depends(get_user_client)
+    form_data: OAuth2PasswordRequestForm = Depends()
 ):
     """
     Authenticate user and return access token (Token-based for mobile apps)
@@ -175,7 +170,6 @@ async def login(
     
     Args:
         form_data: OAuth2 form with username (email) and password
-        user_client: gRPC client for user service
         
     Returns:
         JWT access token for the authenticated user
@@ -184,8 +178,8 @@ async def login(
         HTTPException: If credentials are invalid
     """
     try:
-        # Get user by email (username in OAuth2 flow)
-        user = await user_client.get_user_by_email(form_data.username)
+        # Authenticate user using the user service
+        user = await authenticate_user(form_data.username, form_data.password)
         if not user:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
@@ -193,37 +187,30 @@ async def login(
                 headers={"WWW-Authenticate": "Bearer"},
             )
 
-        # Note: Password verification is a placeholder
-        # In a real implementation, this would verify against stored hash
-        # For now, we'll accept any password for demo purposes
-        # In production, you'd do: verify_password(form_data.password, user.password_hash)
-        
         # Create and return access token
         return create_token_response(user.id, user.email)
 
     except HTTPException:
+        # Re-raise HTTP exceptions
         raise
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Internal server error during login"
+            detail="Internal server error during authentication"
         )
 
 
 @router.post("/login/json", response_model=Token)
 async def login_json(
-    login_data: UserLogin,
-    user_client: UserServiceClient = Depends(get_user_client)
+    login_data: UserLogin
 ):
     """
     Authenticate user with JSON payload (Token-based for mobile apps)
     
-    Alternative login endpoint that accepts JSON instead of form data.
-    Store the returned token and send it in the Authorization header.
+    Alternative to OAuth2 form data for applications that prefer JSON.
     
     Args:
         login_data: User login credentials
-        user_client: gRPC client for user service
         
     Returns:
         JWT access token for the authenticated user
@@ -232,26 +219,24 @@ async def login_json(
         HTTPException: If credentials are invalid
     """
     try:
-        # Get user by email
-        user = await user_client.get_user_by_email(login_data.email)
+        # Authenticate user using the user service
+        user = await authenticate_user(login_data.email, login_data.password)
         if not user:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Invalid email or password"
             )
 
-        # Note: Password verification placeholder (same as above)
-        # verify_password(login_data.password, user.password_hash)
-        
         # Create and return access token
         return create_token_response(user.id, user.email)
 
     except HTTPException:
+        # Re-raise HTTP exceptions
         raise
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Internal server error during login"
+            detail="Internal server error during authentication"
         )
 
 
@@ -289,13 +274,11 @@ async def register_browser(
                 detail="Email address is already registered"
             )
 
-        # Hash password (placeholder)
-        hashed_password = get_password_hash(user_data.password)
-        
-        # Create user in user service
-        created_user = await user_client.create_user(
+        # Create user with password in user service
+        created_user = await user_client.create_user_with_password(
             name=user_data.name,
-            email=user_data.email
+            email=user_data.email,
+            password=user_data.password
         )
         
         if not created_user:
@@ -332,44 +315,38 @@ async def register_browser(
 @router.post("/browser/login", response_model=AuthSuccess)
 async def login_browser(
     response: Response,
-    login_data: UserLogin,
-    user_client: UserServiceClient = Depends(get_user_client)
+    login_data: UserLogin
 ):
     """
-    Authenticate user with HTTP-only cookie (Browser-based)
+    Authenticate user and set authentication cookie (Cookie-based for browsers)
     
-    Authenticates the user and sets an HTTP-only authentication cookie.
-    The browser will automatically send this cookie with subsequent requests.
+    Authenticates the user and sets an HTTP-only cookie for subsequent requests.
     
     Args:
-        response: FastAPI response object
+        response: FastAPI response object for setting cookies
         login_data: User login credentials
-        user_client: gRPC client for user service
         
     Returns:
-        Authentication success message with user profile
+        Success message and user profile information
         
     Raises:
         HTTPException: If credentials are invalid
     """
     try:
-        # Get user by email
-        user = await user_client.get_user_by_email(login_data.email)
+        # Authenticate user using the user service
+        user = await authenticate_user(login_data.email, login_data.password)
         if not user:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Invalid email or password"
             )
 
-        # Note: Password verification placeholder
-        # verify_password(login_data.password, user.password_hash)
-        
-        # Create token and set as HTTP-only cookie
+        # Create access token and set cookie
         token_response = create_token_response(user.id, user.email)
         set_auth_cookie(response, token_response.access_token)
 
         return AuthSuccess(
-            message="Login successful",
+            message="Authentication successful",
             user=UserProfile(
                 id=user.id,
                 name=user.name,
@@ -378,11 +355,12 @@ async def login_browser(
         )
 
     except HTTPException:
+        # Re-raise HTTP exceptions
         raise
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Internal server error during login"
+            detail="Internal server error during authentication"
         )
 
 
@@ -407,47 +385,24 @@ async def logout_browser(response: Response):
 
 @router.get("/me", response_model=UserProfile)
 async def get_profile(
-    current_user: AuthUser = Depends(get_current_user),
-    user_client: UserServiceClient = Depends(get_user_client)
+    current_user: AuthUser = Depends(get_current_user)
 ):
     """
-    Get current user's profile
+    Get current user profile
     
-    Returns the profile information for the currently authenticated user.
-    Works with both cookie and token authentication.
+    Requires authentication via cookie or Authorization header.
     
     Args:
-        current_user: Currently authenticated user from JWT token/cookie
-        user_client: gRPC client for user service
+        current_user: Current authenticated user from dependency
         
     Returns:
-        Current user's profile information
-        
-    Raises:
-        HTTPException: If user is not found
+        User profile information
     """
-    try:
-        # Fetch fresh user data from user service
-        user = await user_client.get_user_by_id(current_user.id)
-        if not user:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="User profile not found"
-            )
-
-        return UserProfile(
-            id=user.id,
-            name=user.name,
-            email=user.email
-        )
-
-    except HTTPException:
-        raise
-    except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Error retrieving user profile"
-        )
+    return UserProfile(
+        id=current_user.id,
+        name=current_user.name,
+        email=current_user.email
+    )
 
 
 @router.put("/me", response_model=UserProfile)

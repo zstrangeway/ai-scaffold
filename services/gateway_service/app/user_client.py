@@ -7,32 +7,32 @@ for user management operations like creation, retrieval, and authentication.
 
 import grpc
 import os
-from typing import Optional
+from typing import Optional, Tuple
 import logging
 
-# Import generated gRPC stubs - fix import paths
-import sys
-import os
-
-# Add the generated contracts to the path
-generated_contracts_path = '/app/generated_contracts/py'
-if os.path.exists(generated_contracts_path):
-    sys.path.insert(0, generated_contracts_path)
-
+# Import generated gRPC stubs from API contracts package
 try:
+    # Try to import from the API contracts package first
     import user_service_pb2 as user_pb2
     import user_service_pb2_grpc as user_grpc
 except ImportError:
-    # Fallback for development environment
-    try:
+    # Fallback import paths for development
+    import sys
+    
+    # Add the generated contracts to the path
+    generated_contracts_path = '/app/generated_contracts/py'
+    if os.path.exists(generated_contracts_path):
+        sys.path.insert(0, generated_contracts_path)
+    else:
+        # Development fallback
         sys.path.append('../../packages/api-contracts/generated/py')
+    
+    try:
         import user_service_pb2 as user_pb2
         import user_service_pb2_grpc as user_grpc
-    except ImportError:
-        # Last resort fallback
-        sys.path.append('/Users/zacharystrangeway/code/ai-scaffold/packages/api-contracts/generated/py')
-        import user_service_pb2 as user_pb2
-        import user_service_pb2_grpc as user_grpc
+    except ImportError as e:
+        logging.error(f"Failed to import user service protobuf: {e}")
+        raise ImportError("Could not import user service protobuf definitions")
 
 logger = logging.getLogger(__name__)
 
@@ -140,7 +140,7 @@ class UserServiceClient:
 
     async def create_user(self, name: str, email: str) -> Optional[user_pb2.User]:
         """
-        Create a new user
+        Create a new user without password
         
         Args:
             name: User's full name
@@ -169,11 +169,108 @@ class UserServiceClient:
             logger.error(f"Error creating user {email}: {e}")
             raise
 
+    async def create_user_with_password(self, name: str, email: str, password: str) -> Optional[user_pb2.User]:
+        """
+        Create a new user with password for authentication
+        
+        Args:
+            name: User's full name
+            email: User's email address
+            password: User's password
+            
+        Returns:
+            Created user object if successful, None otherwise
+        """
+        try:
+            if not self.stub:
+                self.connect()
+
+            request = user_pb2.CreateUserWithPasswordRequest(
+                name=name, 
+                email=email, 
+                password=password
+            )
+            response = self.stub.CreateUserWithPassword(request)
+            
+            if response.user and response.user.id:
+                return response.user
+            return None
+            
+        except grpc.RpcError as e:
+            logger.error(f"gRPC error creating user with password {email}: {e}")
+            if e.code() == grpc.StatusCode.ALREADY_EXISTS:
+                raise ValueError(f"User with email {email} already exists")
+            raise
+        except Exception as e:
+            logger.error(f"Error creating user with password {email}: {e}")
+            raise
+
+    async def verify_user_password(self, email: str, password: str) -> Tuple[bool, Optional[user_pb2.User]]:
+        """
+        Verify user credentials for authentication
+        
+        Args:
+            email: User's email address
+            password: User's password
+            
+        Returns:
+            Tuple of (is_valid, user_object_if_valid)
+        """
+        try:
+            if not self.stub:
+                self.connect()
+
+            request = user_pb2.VerifyUserPasswordRequest(email=email, password=password)
+            response = self.stub.VerifyUserPassword(request)
+            
+            if response.valid and response.user:
+                return True, response.user
+            return False, None
+            
+        except grpc.RpcError as e:
+            logger.error(f"gRPC error verifying password for {email}: {e}")
+            return False, None
+        except Exception as e:
+            logger.error(f"Error verifying password for {email}: {e}")
+            return False, None
+
+    async def update_user_password(self, user_id: str, current_password: str, new_password: str) -> bool:
+        """
+        Update user's password
+        
+        Args:
+            user_id: User's unique identifier
+            current_password: User's current password
+            new_password: User's new password
+            
+        Returns:
+            True if password was updated successfully, False otherwise
+        """
+        try:
+            if not self.stub:
+                self.connect()
+
+            request = user_pb2.UpdateUserPasswordRequest(
+                id=user_id,
+                current_password=current_password,
+                new_password=new_password
+            )
+            response = self.stub.UpdateUserPassword(request)
+            
+            return response.success
+            
+        except grpc.RpcError as e:
+            logger.error(f"gRPC error updating password for user {user_id}: {e}")
+            return False
+        except Exception as e:
+            logger.error(f"Error updating password for user {user_id}: {e}")
+            return False
+
     async def update_user(
         self, user_id: str, name: str, email: str
     ) -> Optional[user_pb2.User]:
         """
-        Update an existing user
+        Update an existing user's basic information
         
         Args:
             user_id: User's unique identifier
@@ -199,7 +296,7 @@ class UserServiceClient:
             if e.code() == grpc.StatusCode.NOT_FOUND:
                 return None
             if e.code() == grpc.StatusCode.ALREADY_EXISTS:
-                raise ValueError(f"Email {email} is already in use")
+                raise ValueError(f"User with email {email} already exists")
             raise
         except Exception as e:
             logger.error(f"Error updating user {user_id}: {e}")
@@ -213,7 +310,7 @@ class UserServiceClient:
             user_id: User's unique identifier
             
         Returns:
-            True if user was deleted, False if user not found
+            True if user was deleted successfully, False if user not found
         """
         try:
             if not self.stub:
@@ -222,7 +319,9 @@ class UserServiceClient:
             request = user_pb2.DeleteUserRequest(id=user_id)
             response = self.stub.DeleteUser(request)
             
-            return bool(response.id)
+            # Check if the response indicates successful deletion
+            # The response should have an id field if successful
+            return bool(response and hasattr(response, 'id') and response.id)
             
         except grpc.RpcError as e:
             logger.error(f"gRPC error deleting user {user_id}: {e}")
@@ -233,7 +332,7 @@ class UserServiceClient:
             logger.error(f"Error deleting user {user_id}: {e}")
             raise
 
-    async def list_users(self, page: int = 1, limit: int = 10) -> tuple[list[user_pb2.User], int]:
+    async def list_users(self, page: int = 1, limit: int = 10) -> Tuple[list[user_pb2.User], int]:
         """
         List users with pagination
         
@@ -242,7 +341,7 @@ class UserServiceClient:
             limit: Number of users per page
             
         Returns:
-            Tuple of (list of users, total count)
+            Tuple of (users_list, total_count)
         """
         try:
             if not self.stub:
@@ -261,17 +360,12 @@ class UserServiceClient:
             raise
 
 
-# Global client instance for dependency injection
+# Singleton client instance
 _user_client = None
 
 
 def get_user_client() -> UserServiceClient:
-    """
-    Get the global user service client instance
-    
-    Returns:
-        UserServiceClient instance
-    """
+    """Get the singleton user service client"""
     global _user_client
     if _user_client is None:
         _user_client = UserServiceClient()
@@ -279,7 +373,7 @@ def get_user_client() -> UserServiceClient:
 
 
 async def close_user_client():
-    """Close the global user service client"""
+    """Close the user service client connection"""
     global _user_client
     if _user_client:
         _user_client.close()

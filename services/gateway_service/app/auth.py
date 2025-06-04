@@ -15,6 +15,7 @@ from passlib.context import CryptContext
 from pydantic import BaseModel
 
 from .config import get_settings
+from .user_client import get_user_client
 
 
 # Get settings
@@ -51,8 +52,43 @@ class AuthUser(BaseModel):
     name: str
 
 
+async def authenticate_user(email: str, password: str) -> Optional[AuthUser]:
+    """
+    Authenticate user with email and password using the user service
+    
+    Args:
+        email: User's email address
+        password: User's password
+        
+    Returns:
+        AuthUser if authentication successful, None otherwise
+    """
+    try:
+        user_client = get_user_client()
+        is_valid, user = await user_client.verify_user_password(email, password)
+        
+        if is_valid and user:
+            return AuthUser(
+                id=user.id,
+                email=user.email,
+                name=user.name
+            )
+        return None
+        
+    except Exception as e:
+        # Log error but don't expose details to client
+        import logging
+        logging.error(f"Authentication error for {email}: {e}")
+        return None
+
+
 def verify_password(plain_password: str, hashed_password: str) -> bool:
-    """Verify a plain password against its hash"""
+    """
+    Verify a plain password against its hash
+    
+    Note: This is now primarily used for local password verification.
+    For user authentication, use authenticate_user() which delegates to the user service.
+    """
     return pwd_context.verify(plain_password, hashed_password)
 
 
@@ -181,19 +217,16 @@ async def get_current_user(
     token_data: TokenData = Depends(get_current_user_token)
 ) -> AuthUser:
     """
-    Dependency to get current authenticated user
-    
-    This is a placeholder that would typically fetch user details
-    from the user service. For now, it returns user info from the token.
+    Dependency to get current authenticated user with fresh data from user service
     
     Args:
         token_data: Token data from JWT
         
     Returns:
-        AuthUser with user details
+        AuthUser with current user details from user service
         
     Raises:
-        HTTPException: If user cannot be found
+        HTTPException: If user cannot be found or token is invalid
     """
     if not token_data.user_id:
         raise HTTPException(
@@ -201,13 +234,35 @@ async def get_current_user(
             detail="Invalid authentication credentials",
         )
     
-    # TODO: Fetch user details from user service via gRPC
-    # For now, return basic user info from token
-    return AuthUser(
-        id=token_data.user_id,
-        email=token_data.email or "",
-        name="User"  # Would be fetched from user service
-    )
+    try:
+        # Fetch current user details from user service
+        user_client = get_user_client()
+        user = await user_client.get_user_by_id(token_data.user_id)
+        
+        if not user:
+            # User no longer exists or token is stale
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="User not found",
+            )
+        
+        return AuthUser(
+            id=user.id,
+            email=user.email,
+            name=user.name
+        )
+        
+    except HTTPException:
+        # Re-raise HTTP exceptions
+        raise
+    except Exception as e:
+        # Log error but return generic error to client
+        import logging
+        logging.error(f"Error fetching user {token_data.user_id}: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Internal server error",
+        )
 
 
 def create_token_response(user_id: str, email: str) -> Token:

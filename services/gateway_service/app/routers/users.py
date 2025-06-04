@@ -5,7 +5,7 @@ Provides administrative endpoints for user management operations.
 """
 
 from fastapi import APIRouter, Depends, HTTPException, status, Query
-from pydantic import BaseModel
+from pydantic import BaseModel, EmailStr
 from typing import List, Optional
 
 from ..auth import AuthUser, get_current_user
@@ -26,6 +26,20 @@ class UserResponse(BaseModel):
                 "id": "123e4567-e89b-12d3-a456-426614174000",
                 "name": "John Doe",
                 "email": "john@example.com"
+            }
+        }
+
+
+class UserUpdateRequest(BaseModel):
+    """User update request model"""
+    name: str
+    email: EmailStr
+
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "name": "John Doe",
+                "email": "john.doe@example.com"
             }
         }
 
@@ -190,6 +204,65 @@ async def get_user_by_email(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Error retrieving user information"
+        )
+
+
+@router.put("/{user_id}", response_model=UserResponse)
+async def update_user(
+    user_id: str,
+    user_update: UserUpdateRequest,
+    current_user: AuthUser = Depends(get_current_user),
+    user_client: UserServiceClient = Depends(get_user_client)
+):
+    """
+    Update a specific user's information (Administrative operation)
+    
+    Updates a user's basic information. This is an administrative operation.
+    Users can update their own profile via PUT /auth/me instead.
+    
+    Args:
+        user_id: Unique identifier of the user to update
+        user_update: Updated user information
+        current_user: Currently authenticated user
+        user_client: gRPC client for user service
+        
+    Returns:
+        Updated user information
+        
+    Raises:
+        HTTPException: If user is not found or other validation errors
+    """
+    try:
+        # Update user via user service
+        updated_user = await user_client.update_user(
+            user_id=user_id,
+            name=user_update.name,
+            email=user_update.email
+        )
+        
+        if not updated_user:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"User with ID {user_id} not found"
+            )
+
+        return UserResponse(
+            id=updated_user.id,
+            name=updated_user.name,
+            email=updated_user.email
+        )
+
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=str(e)
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Error updating user information"
         )
 
 
