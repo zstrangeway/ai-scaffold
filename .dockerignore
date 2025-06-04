@@ -1,0 +1,59 @@
+# Common ignores
+.git
+.gitignore
+.dockerignore
+README.md
+LICENSE
+
+# Node.js
+node_modules/
+.npm
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+env/
+ENV/
+.env
+.env.*
+!/.env.example
+
+# Poetry
+.poetry/
+# poetry.lock # Keep poetry.lock if services build from it inside Docker
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# IDEs and editors
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Logs
+logs/
+*.log
+
+# Coverage
+.coverage
+coverage.xml
+htmlcov/
+
+# API Contracts Generated Code (if not copied into service build contexts)
+# packages/api-contracts/generated/
+
+# Specific service/app build artifacts if not needed in image
+# apps/*/dist
+# apps/*/build
+# services/*/dist
+# services/*/build 

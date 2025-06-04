@@ -1,5 +1,5 @@
 # Run nextjs in docker
-FROM node:23-alpine-slim AS base
+FROM node:23-alpine AS base
 
 WORKDIR /usr/src/app
 
