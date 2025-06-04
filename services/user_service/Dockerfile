@@ -25,9 +25,8 @@ RUN poetry install --no-interaction --no-ansi --no-dev --no-root
 # Copy the application code into the container
 COPY ./app /app/app
 
-# Expose the port the app runs on (FastAPI default via Uvicorn is often 8000, but Dockerfile typically exposes 80 or a common app port)
-# The actual mapping happens in docker-compose.yml
-EXPOSE 8001
+# Expose the gRPC port
+EXPOSE 50051
 
-# Command to run the application
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8001"]
+# Command to run the gRPC application
+CMD ["python", "-m", "app.main"]

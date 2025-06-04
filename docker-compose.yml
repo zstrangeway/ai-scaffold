@@ -69,14 +69,15 @@ services:
       - "8000:8000"
     depends_on:
       - postgres_db # Or other services it directly needs at startup
+      - user_service
     volumes:
       - ./services/gateway_service:/app
       # Mount for generated contracts if needed during development
       - ./packages/api-contracts/generated/py:/app/generated_contracts/py:ro
     networks:
       - my_scaffold_network
-    # environment:
-    # - SOME_ENV_VAR=value
+    environment:
+      - USER_SERVICE_URL=my_scaffold_user_service:50051
 
   user_service:
     build:
@@ -84,7 +85,7 @@ services:
       dockerfile: Dockerfile
     container_name: my_scaffold_user_service
     ports:
-      - "8001:8000" # Expose on a different host port if gateway is 8000
+      - "50051:50051" # Expose gRPC port
     depends_on:
       - postgres_db
     volumes:
@@ -92,8 +93,8 @@ services:
       - ./packages/api-contracts/generated/py:/app/generated_contracts/py:ro
     networks:
       - my_scaffold_network
-    # environment:
-    # - DATABASE_URL=postgresql://scaffold_user:scaffold_password@postgres_db:5432/scaffold_db
+    environment:
+      - DATABASE_URL=postgresql://scaffold_user:scaffold_password@postgres_db:5432/scaffold_db
 
   notification_service:
     build:

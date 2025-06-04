@@ -1,10 +1,29 @@
 import grpc
 from typing import Optional
 from sqlalchemy.orm import Session
+import sys
+import os
+
+# Add the generated contracts to the path
+generated_contracts_path = '/app/generated_contracts/py'
+if os.path.exists(generated_contracts_path):
+    sys.path.insert(0, generated_contracts_path)
 
 # Import the generated gRPC stubs and messages (from API contracts package)
-from user_service_pb2_grpc import UserServiceServicer
-import user_service_pb2 as pb2
+try:
+    from user_service_pb2_grpc import UserServiceServicer
+    import user_service_pb2 as pb2
+except ImportError:
+    # Fallback for development environment
+    try:
+        sys.path.append('../../packages/api-contracts/generated/py')
+        from user_service_pb2_grpc import UserServiceServicer
+        import user_service_pb2 as pb2
+    except ImportError:
+        # Last resort fallback
+        sys.path.append('/Users/zacharystrangeway/code/ai-scaffold/packages/api-contracts/generated/py')
+        from user_service_pb2_grpc import UserServiceServicer
+        import user_service_pb2 as pb2
 
 from .repository import UserRepository
 from .database import get_test_db

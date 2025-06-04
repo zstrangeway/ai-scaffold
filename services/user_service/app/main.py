@@ -1,7 +1,25 @@
 import logging
 from concurrent.futures import ThreadPoolExecutor
 import grpc
-from user_service_pb2_grpc import add_UserServiceServicer_to_server
+import sys
+import os
+
+# Add the generated contracts to the path
+generated_contracts_path = '/app/generated_contracts/py'
+if os.path.exists(generated_contracts_path):
+    sys.path.insert(0, generated_contracts_path)
+
+try:
+    from user_service_pb2_grpc import add_UserServiceServicer_to_server
+except ImportError:
+    # Fallback for development environment
+    try:
+        sys.path.append('../../packages/api-contracts/generated/py')
+        from user_service_pb2_grpc import add_UserServiceServicer_to_server
+    except ImportError:
+        # Last resort fallback
+        sys.path.append('/Users/zacharystrangeway/code/ai-scaffold/packages/api-contracts/generated/py')
+        from user_service_pb2_grpc import add_UserServiceServicer_to_server
 
 from .grpc_service import UserService
 from .database import create_tables
