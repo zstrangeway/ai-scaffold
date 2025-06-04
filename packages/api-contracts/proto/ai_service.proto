@@ -1,0 +1,35 @@
+// API Contracts for the AI Service
+
+syntax = "proto3";
+
+package ai_service;
+
+// AI Service API
+service AIService {
+    rpc GenerateText(GenerateTextRequest) returns (GenerateTextResponse);
+}
+
+// Generate Text Request
+message GenerateTextRequest {
+    string prompt = 1;
+    string model = 2;
+    string temperature = 3;
+    string max_tokens = 4;
+    string top_p = 5;
+    string frequency_penalty = 6;
+    string presence_penalty = 7;
+    string stop = 8;
+}
+
+// Generate Text Response
+message GenerateTextResponse {
+    string id = 1;
+    string text = 2;
+    string model = 3;
+    string temperature = 4;
+    string max_tokens = 5;
+    string top_p = 6;
+    string frequency_penalty = 7;
+    string presence_penalty = 8;
+    string stop = 9;
+}

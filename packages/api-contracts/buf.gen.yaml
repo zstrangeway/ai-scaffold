@@ -1,0 +1,14 @@
+version: v1
+plugins:
+  # TypeScript
+  - plugin: es
+    opt: target=ts
+    out: generated/ts
+
+  # Python messages
+  - plugin: buf.build/protocolbuffers/python
+    out: generated/py
+
+  # Python gRPC stubs
+  - plugin: buf.build/grpc/python
+    out: generated/py 

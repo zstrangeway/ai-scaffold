@@ -50,3 +50,6 @@ logs/
 .coverage
 coverage.xml
 htmlcov/
+
+# API Contracts Generated Code
+packages/api-contracts/generated/

@@ -1,0 +1,63 @@
+// API Contracts for the Notification Service
+
+syntax = "proto3";
+
+package notification_service;
+
+// Notification Service API
+service NotificationService {
+    rpc SendNotification(SendNotificationRequest) returns (SendNotificationResponse);
+    rpc SendEmail(SendEmailRequest) returns (SendEmailResponse);
+    rpc SendSms(SendSmsRequest) returns (SendSmsResponse);
+}
+
+// Send Notification Request
+message SendNotificationRequest {
+    string user_id = 1;
+    string template_id = 2;
+    map<string, string> template_data = 3;
+    string subject = 4;
+    string body = 5;
+    string from_email = 6;
+    string from_name = 7;
+}
+
+// Send Notification Response
+message SendNotificationResponse {
+    string sent_notification_id = 1;
+}
+
+// Send Email Request
+message SendEmailRequest {
+    string user_id = 1;
+    string template_id = 2;
+    map<string, string> template_data = 3;
+    string subject = 4;
+    string body = 5;
+    string from_email = 6;
+    string from_name = 7;
+    string to_email = 8;
+    string to_name = 9;
+    string cc_email = 10;
+}
+
+// Send Email Response
+message SendEmailResponse {
+    string sent_email_id = 1;
+}
+
+// Send Sms Request
+message SendSmsRequest {
+    string user_id = 1;
+    string template_id = 2;
+    map<string, string> template_data = 3;
+    string subject = 4;
+    string body = 5;
+    string from_email = 6;
+    string from_name = 7;
+}
+
+// Send Sms Response
+message SendSmsResponse {
+    string sent_sms_id = 1;
+}

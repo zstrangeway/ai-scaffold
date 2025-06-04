@@ -1,0 +1,14 @@
+{
+  "name": "@my-scaffold-project/api-contracts",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Protocol Buffer definitions and generated clients/types for my-scaffold-project.",
+  "scripts": {
+    "generate": "pnpm exec buf generate proto --template buf.gen.yaml && touch generated/py/__init__.py"
+  },
+  "devDependencies": {
+    "@bufbuild/buf": "^1.30.0",
+    "@bufbuild/protoc-gen-es": "^1.7.2",
+    "@bufbuild/protobuf": "^1.7.2"
+  }
+} 

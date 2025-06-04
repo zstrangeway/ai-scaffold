@@ -9,53 +9,65 @@
     - `.memory/projectbrief.md` created and populated.
     - `.memory/productContext.md` created and populated.
     - `.memory/memory_bank_instructions.md` created and populated.
-    - `.memory/activeContext.md` created and populated.
-    - `.memory/systemPatterns.md` created and populated.
-    - `.memory/techContext.md` created and populated.
-- **AI Persona Definition:**
+    - `.memory/activeContext.md` updated with current focus.
+    - `.memory/systemPatterns.md` updated with API contract patterns.
+    - `.memory/techContext.md` updated with API contract technologies.
+- **AI Persona & Conventions Definition:**
     - `.cursor/rules/persona.mdc` created to guide AI collaboration.
+    - `.cursor/rules/memory_conventions.mdc` created.
+- **Root Project Files:**
+    - `.gitignore` created and includes `packages/api-contracts/generated/`.
+    - Initial Python services (`user_service`, `gateway_service`, `notification_service`, `ai_service`) set up with Poetry, basic FastAPI, and Dockerfiles.
+    - Dockerfiles for Python services corrected to use `apk` for Alpine base images.
+- **`packages/api-contracts` Setup:**
+    - Protocol Buffer definitions (`.proto` files) for all core services created in `packages/api-contracts/proto/`.
+    - `buf.gen.yaml` configured for TypeScript (`@bufbuild/protoc-gen-es`) and Python (remote BSR plugins) code generation.
+    - `package.json` script `pnpm generate` successfully generates TS/Python code into `packages/api-contracts/generated/` and creates `generated/py/__init__.py`.
+    - `buf.yaml` is currently not used due to parsing issues; generation relies on explicit CLI arguments to `buf generate`.
+    - Duplicate field tags in `notification_service.proto` resolved.
 
 ## What's Left to Build (Immediate Next Steps - Initial Scaffolding)
-- **This `progress.md` file needs to be finalized.**
-- **Create `.cursor/rules/memory_conventions.mdc`** to document how the AI should use memory files.
-- **Delete the now-redundant `.cursor/memory.md** planning file.
-- **Root Project Files:**
-    - Create root `package.json` for pnpm workspaces.
+- **Finalize this `progress.md` file.**
+- **Root Project Files (Monorepo Setup):**
+    - Create/finalize root `package.json` for pnpm workspaces.
     - Create `pnpm-workspace.yaml`.
     - Create initial `README.md` (can be simple, pointing to Memory Bank for details).
-    - Create `.gitignore` and `.dockerignore`.
-    - Create basic `docker-compose.yml` structure.
+    - Create/finalize `.dockerignore`.
+    - Create/finalize basic `docker-compose.yml` structure to include all services.
 - **Directory Structure:**
-    - Create `apps/`, `packages/`, `services/` directories.
-    - Create sub-directories for each app/package/service (e.g., `apps/web_site`, `packages/ui`, `services/user_service`).
-    - Initialize `.cursor/rules.md` (as a directory) and `.cursor/memory.md` files within each sub-project as they are scaffolded.
+    - Ensure `apps/`, `packages/`, `services/` directories exist with appropriate `.gitkeep` or initial content if not already done.
+    - Create sub-directories for each app/package/service (e.g., `apps/web_site`, `packages/ui`) if not already present.
+- **Python Service Integration of API Contracts:**
+    - Configure Poetry in each Python service (`user_service`, `gateway_service`, etc.) to use the generated Python code from `packages/api-contracts/generated/py` as a local path dependency.
+    - Implement the gRPC service interfaces defined in the `.proto` files within each respective Python service.
 - **`packages/ui` Scaffolding:**
     - Initialize `package.json`.
     - Setup Tailwind CSS.
     - Initialize `shadcn/ui` (`components.json`).
     - Create a couple of example shared components.
-- **Frontend App Scaffolding (e.g., `apps/web_site`):**
+- **Frontend App Scaffolding (e.g., `apps/web_app` then `apps/web_site`, `apps/web_admin`):
     - Initialize `package.json` with Vite + React + TypeScript.
     - Setup Tailwind CSS, ensuring it processes `packages/ui`.
-    - Configure path aliases for `packages/ui`.
+    - Configure path aliases for `packages/ui` and `packages/api-contracts` (for TS clients).
     - Implement basic i18n setup (`i18next`, `en/common.json`).
-    - Create basic app structure (e.g., `App.tsx`, `main.tsx`, example page).
-- **Backend Service Scaffolding (e.g., `services/user_service` or `services/gateway_service`):**
-    - Initialize Python project (`pyproject.toml` with Poetry/PDM).
-    - Setup FastAPI basic app structure.
-    - Create `Dockerfile`.
-    - Add to `docker-compose.yml`.
+    - Create basic app structure (e.g., `App.tsx`, `main.tsx`, example page) and integrate generated TS clients to call an example gRPC endpoint via the gateway.
+- **Gateway Service (`services/gateway_service`):**
+    - Implement gRPC client logic to call other backend services (e.g., `user_service`).
+    - Expose initial RESTful/HTTP endpoints that map to these gRPC calls.
 - **Further Scaffolding (Iterative):**
     - Continue scaffolding other frontend apps and backend services.
     - Implement basic functionality (e.g., user endpoints, basic auth flow via gateway).
     - Write initial tests.
 
-## Known Issues and Limitations (at this very early stage)
-- No actual code for applications or services exists yet.
-- The Memory Bank is based on planning; it will need to be updated as implementation progresses and decisions are validated or evolve.
-- Tooling (linters, formatters, test runners) is planned but not yet configured.
+## Known Issues and Limitations
+- **`buf.yaml` Parsing:** `buf.yaml` in `packages/api-contracts` causes parsing errors, so it's not currently used. This means `buf lint` and `buf breaking` benefits are not available for Protobuf definitions.
+- No actual application/service logic implemented beyond basic FastAPI/Vite setup and API contract generation.
+- Tooling (linters beyond `buf lint` placeholder, formatters, test runners) is planned but not yet fully configured or integrated across all parts of the monorepo.
+- `.cursor/memory.md` (the detailed plan file) was deleted; ensure all relevant details have been transferred to the 7 core Memory Bank files.
 
 ## Evolution of Project Decisions
-- **Initial Misunderstanding of "memory-bank-mcp":** Initially interpreted as using generic MCP knowledge graph tools. Clarified to mean the specific 7 Markdown file structure for the Memory Bank.
-- **Role of `.cursor/memory.md`:** Initially thought to be a persistent high-level planning doc. Clarified that the 7 `.memory/` files are the sole source of truth for project memory, and `.cursor/memory.md` should be deleted after they are populated.
-- **`.cursor/rules/` as a directory:** Corrected the initial assumption that `.cursor/rules.md` was a file; it is a directory to hold multiple `.mdc` rule files. 
+- **Initial Misunderstanding of "memory-bank-mcp":** Clarified to mean the specific 7 Markdown file structure.
+- **Role of `.cursor/memory.md`:** Confirmed that the 7 `.memory/` files are the sole source of truth; original detailed plan in `.cursor/memory.md` was deleted after its content was migrated.
+- **`.cursor/rules/` as a directory:** Standardized.
+- **Python API Contract Generation:** Shifted from manual `grpc_tools.protoc` scripting to using `buf` with remote BSR plugins for consistency with TypeScript generation. Required adding `touch generated/py/__init__.py` to the build script.
+- **`buf.yaml` Usage:** Temporarily abandoned due to persistent parsing errors; `buf generate` now uses explicit path inputs. 
