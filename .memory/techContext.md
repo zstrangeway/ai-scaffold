@@ -15,6 +15,7 @@
 - **Backend Async:** (To be decided, simple `async/await` for now, Celery if complex background tasks are re-introduced)
 - **Database:** PostgreSQL (latest stable version)
 - **Containerization:** Docker, Docker Compose
+    - `apps/web_site/Dockerfile` currently uses `node:23-alpine` as its base image, which may show "Tag recommendations available" in some IDEs/tools. Other frontend apps will likely use more stable LTS versions like `node:20-alpine` or `node:22-alpine` when scaffolded.
 - **Version Control:** Git
 - **Linters & Formatters:**
     - Frontend: ESLint, Prettier
@@ -41,6 +42,7 @@
 - **English as Default Language:** Initial i18n setup focuses only on English.
 - **Local Development Focus:** Initial Docker and tooling setup is optimized for local development environments.
 - **API Contract Generation:** Currently relies on explicit `buf generate proto --template buf.gen.yaml` due to `buf.yaml` parsing issues. Linting and breaking change detection via `buf.yaml` are not active.
+- **Frontend Docker Images:** Specific Node.js versions for frontend Docker images are being finalized. `apps/web_site/Dockerfile` uses `node:23-alpine` which has an active tag recommendation warning.
 
 ## Dependencies (High-Level)
 - **Frontend Apps depend on:** `packages/ui`, `packages/api-contracts` (generated TS clients), React, Vite, Tailwind CSS, i18next.

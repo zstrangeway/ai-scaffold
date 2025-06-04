@@ -61,6 +61,7 @@
 
 ## Known Issues and Limitations
 - **`buf.yaml` Parsing:** `buf.yaml` in `packages/api-contracts` causes parsing errors, so it's not currently used. This means `buf lint` and `buf breaking` benefits are not available for Protobuf definitions.
+- **Docker Image Tag for `web_site`:** The `apps/web_site/Dockerfile` uses `node:23-alpine` as its base image, which triggers a "Tag recommendations available" warning in some environments. This may be revisited.
 - No actual application/service logic implemented beyond basic FastAPI/Vite setup and API contract generation.
 - Tooling (linters beyond `buf lint` placeholder, formatters, test runners) is planned but not yet fully configured or integrated across all parts of the monorepo.
 - `.cursor/memory.md` (the detailed plan file) was deleted; ensure all relevant details have been transferred to the 7 core Memory Bank files.

@@ -35,6 +35,7 @@
 
 ## Active Decisions and Considerations
 - **`buf.yaml` Issue:** Currently not using `buf.yaml` in `packages/api-contracts` due to persistent, unresolved parsing errors. Code generation relies on explicitly passing `proto` as input and `buf.gen.yaml` as the template to `buf generate`. This means `buf`'s linting and breaking change detection features based on `buf.yaml` are not active for now.
+- **Docker Image Tag for `web_site`:** The `apps/web_site/Dockerfile` uses `node:23-alpine`, which has a "Tag recommendations available" warning. This is noted but not blocking current progress.
 - **Python Dependency Management for Contracts:** How services will consume the Python code generated in `packages/api-contracts/generated/py`. The plan is to use Poetry's path dependencies.
 - Order of scaffolding for services and apps now that contracts are defined.
 
