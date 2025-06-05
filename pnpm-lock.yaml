@@ -10,6 +10,9 @@ importers:
 
   apps/web_admin:
     dependencies:
+      '@my-scaffold-project/web-ui':
+        specifier: workspace:*
+        version: link:../../packages/web-ui
       next:
         specifier: 15.3.3
         version: 15.3.3(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
