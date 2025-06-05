@@ -37,7 +37,7 @@ class UserService(UserServiceServicer):
 
     def __init__(self, db_session_factory=None):
         """Initialize the service with an optional database session factory"""
-        self.db_session_factory = db_session_factory or get_test_db
+        self.db_session_factory = db_session_factory or get_db_session
 
     def _get_db_session(self) -> Session:
         """Get a database session"""
@@ -61,7 +61,7 @@ class UserService(UserServiceServicer):
             return pb2.GetUserByIdResponse()
 
         try:
-            with get_db_session() as db:
+            with self._get_db_session() as db:
                 repo = UserRepository(db)
                 user = repo.get_by_id(request.id)
                 
@@ -84,7 +84,7 @@ class UserService(UserServiceServicer):
             return pb2.GetUserByEmailResponse()
 
         try:
-            with get_db_session() as db:
+            with self._get_db_session() as db:
                 repo = UserRepository(db)
                 user = repo.get_by_email(request.email)
                 
@@ -107,7 +107,7 @@ class UserService(UserServiceServicer):
             return pb2.CreateUserResponse()
 
         try:
-            with get_db_session() as db:
+            with self._get_db_session() as db:
                 repo = UserRepository(db)
                 user = repo.create(request.name, request.email)
                 return pb2.CreateUserResponse(user=self._model_to_proto(user))
@@ -128,7 +128,7 @@ class UserService(UserServiceServicer):
             return pb2.CreateUserWithPasswordResponse()
 
         try:
-            with get_db_session() as db:
+            with self._get_db_session() as db:
                 repo = UserRepository(db)
                 user = repo.create_with_password(request.name, request.email, request.password)
                 return pb2.CreateUserWithPasswordResponse(user=self._model_to_proto(user))
@@ -149,7 +149,7 @@ class UserService(UserServiceServicer):
             return pb2.UpdateUserResponse()
 
         try:
-            with get_db_session() as db:
+            with self._get_db_session() as db:
                 repo = UserRepository(db)
                 user = repo.update(request.id, request.name, request.email)
                 
@@ -176,7 +176,7 @@ class UserService(UserServiceServicer):
             return pb2.UpdateUserPasswordResponse(success=False)
 
         try:
-            with get_db_session() as db:
+            with self._get_db_session() as db:
                 repo = UserRepository(db)
                 success = repo.update_password(request.id, request.current_password, request.new_password)
                 
@@ -199,7 +199,7 @@ class UserService(UserServiceServicer):
             return pb2.VerifyUserPasswordResponse(valid=False)
 
         try:
-            with get_db_session() as db:
+            with self._get_db_session() as db:
                 repo = UserRepository(db)
                 user = repo.verify_user_password(request.email, request.password)
                 
@@ -223,7 +223,7 @@ class UserService(UserServiceServicer):
             return pb2.DeleteUserResponse()
 
         try:
-            with get_db_session() as db:
+            with self._get_db_session() as db:
                 repo = UserRepository(db)
                 success = repo.delete(request.id)
                 
@@ -244,7 +244,7 @@ class UserService(UserServiceServicer):
         limit = max(1, min(100, request.limit)) if request.limit > 0 else 10
 
         try:
-            with get_db_session() as db:
+            with self._get_db_session() as db:
                 repo = UserRepository(db)
                 users, total = repo.list_users(page, limit)
                 

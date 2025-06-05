@@ -9,6 +9,8 @@ import grpc
 import os
 from typing import Optional, Tuple
 import logging
+import asyncio
+from concurrent.futures import ThreadPoolExecutor
 
 # Import generated gRPC stubs from API contracts package
 try:
@@ -36,6 +38,8 @@ except ImportError:
 
 logger = logging.getLogger(__name__)
 
+# Thread pool for running synchronous gRPC calls
+executor = ThreadPoolExecutor(max_workers=10) # Consider making max_workers configurable
 
 class UserServiceClient:
     """gRPC client for the User Service"""
@@ -93,7 +97,8 @@ class UserServiceClient:
                 self.connect()
 
             request = user_pb2.GetUserByIdRequest(id=user_id)
-            response = self.stub.GetUserById(request)
+            loop = asyncio.get_running_loop()
+            response = await loop.run_in_executor(executor, self.stub.GetUserById, request)
             
             if response.user and response.user.id:
                 return response.user
@@ -123,7 +128,8 @@ class UserServiceClient:
                 self.connect()
 
             request = user_pb2.GetUserByEmailRequest(email=email)
-            response = self.stub.GetUserByEmail(request)
+            loop = asyncio.get_running_loop()
+            response = await loop.run_in_executor(executor, self.stub.GetUserByEmail, request)
             
             if response.user and response.user.id:
                 return response.user
@@ -154,7 +160,8 @@ class UserServiceClient:
                 self.connect()
 
             request = user_pb2.CreateUserRequest(name=name, email=email)
-            response = self.stub.CreateUser(request)
+            loop = asyncio.get_running_loop()
+            response = await loop.run_in_executor(executor, self.stub.CreateUser, request)
             
             if response.user and response.user.id:
                 return response.user
@@ -190,7 +197,8 @@ class UserServiceClient:
                 email=email, 
                 password=password
             )
-            response = self.stub.CreateUserWithPassword(request)
+            loop = asyncio.get_running_loop()
+            response = await loop.run_in_executor(executor, self.stub.CreateUserWithPassword, request)
             
             if response.user and response.user.id:
                 return response.user
@@ -221,7 +229,8 @@ class UserServiceClient:
                 self.connect()
 
             request = user_pb2.VerifyUserPasswordRequest(email=email, password=password)
-            response = self.stub.VerifyUserPassword(request)
+            loop = asyncio.get_running_loop()
+            response = await loop.run_in_executor(executor, self.stub.VerifyUserPassword, request)
             
             if response.valid and response.user:
                 return True, response.user
@@ -255,7 +264,8 @@ class UserServiceClient:
                 current_password=current_password,
                 new_password=new_password
             )
-            response = self.stub.UpdateUserPassword(request)
+            loop = asyncio.get_running_loop()
+            response = await loop.run_in_executor(executor, self.stub.UpdateUserPassword, request)
             
             return response.success
             
@@ -285,7 +295,8 @@ class UserServiceClient:
                 self.connect()
 
             request = user_pb2.UpdateUserRequest(id=user_id, name=name, email=email)
-            response = self.stub.UpdateUser(request)
+            loop = asyncio.get_running_loop()
+            response = await loop.run_in_executor(executor, self.stub.UpdateUser, request)
             
             if response.user and response.user.id:
                 return response.user
@@ -317,7 +328,8 @@ class UserServiceClient:
                 self.connect()
 
             request = user_pb2.DeleteUserRequest(id=user_id)
-            response = self.stub.DeleteUser(request)
+            loop = asyncio.get_running_loop()
+            response = await loop.run_in_executor(executor, self.stub.DeleteUser, request)
             
             # Check if the response indicates successful deletion
             # The response should have an id field if successful
@@ -348,7 +360,8 @@ class UserServiceClient:
                 self.connect()
 
             request = user_pb2.ListUsersRequest(page=page, limit=limit)
-            response = self.stub.ListUsers(request)
+            loop = asyncio.get_running_loop()
+            response = await loop.run_in_executor(executor, self.stub.ListUsers, request)
             
             return list(response.users), response.total
             
@@ -378,3 +391,4 @@ async def close_user_client():
     if _user_client:
         _user_client.close()
         _user_client = None 
+    executor.shutdown(wait=True) # Added to gracefully shutdown executor 
