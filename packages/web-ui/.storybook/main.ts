@@ -17,11 +17,23 @@ const config: StorybookConfig = {
     reactDocgen: 'react-docgen-typescript',
     reactDocgenTypescriptOptions: {
       shouldExtractLiteralValuesFromEnum: true,
-      propFilter: (prop) => (prop.parent ? !/node_modules/.test(prop.parent.fileName) : true),
+      propFilter: (prop: any) => (prop.parent ? !/node_modules/.test(prop.parent.fileName) : true),
     },
   },
   docs: {
     autodocs: 'tag',
+  },
+  viteFinal: async (config) => {
+    // Configure Vite for Docker hot-reloading
+    if (config.server) {
+      config.server.watch = {
+        usePolling: true, // Enable polling for Docker
+      };
+      config.server.host = true; // Allow external connections
+      config.server.strictPort = true;
+      config.server.port = 6006;
+    }
+    return config;
   },
 };
 
