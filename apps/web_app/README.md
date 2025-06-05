@@ -1,24 +1,130 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Web App - My Scaffold Project
+
+A modern React/Next.js web application with complete authentication system.
+
+## Features
+
+### Authentication System
+- **Sign In/Sign Up**: Complete user registration and login flow
+- **JWT Authentication**: Secure token-based authentication
+- **Persistent Sessions**: Authentication state persisted in local storage
+- **Protected Routes**: Automatic redirection for authenticated users
+- **Form Validation**: Comprehensive form validation using React Hook Form and Zod
+
+### Tech Stack
+- **Framework**: Next.js 15 with App Router
+- **UI**: React 19 + TypeScript
+- **Styling**: Tailwind CSS
+- **State Management**: Zustand
+- **Forms**: React Hook Form + Zod validation
+- **Internationalization**: i18next with English support
+- **API Client**: Custom client using Protocol Buffer contracts
 
 ## Getting Started
 
-First, run the development server:
+### Prerequisites
+- Node.js 18+ with pnpm
+- API contracts generated (run `pnpm generate` in `packages/api-contracts`)
 
+### Installation
 ```bash
-npm run dev
-# or
-yarn dev
-# or
+# Install dependencies
+pnpm install
+
+# Copy environment configuration
+cp .env.example .env.local
+
+# Start development server
 pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+The app will be available at http://localhost:3001
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Authentication Flow
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+### User Registration
+1. Navigate to `/register`
+2. Fill in name, email, password, and confirm password
+3. On successful registration, user is automatically signed in
+4. Redirected to dashboard
+
+### User Sign In
+1. Navigate to `/signin`
+2. Enter email and password
+3. On successful authentication, JWT tokens are stored
+4. Redirected to dashboard
+
+### Protected Routes
+- `/dashboard` - User dashboard (requires authentication)
+- Authentication state is checked on page load
+- Unauthenticated users are redirected to `/signin`
+
+### Sign Out
+- Available from dashboard navigation
+- Clears authentication tokens and redirects to home
+
+## API Integration
+
+The app uses generated TypeScript clients from Protocol Buffer definitions:
+
+```typescript
+// API client usage
+import { apiClient } from '../lib/api';
+
+const response = await apiClient.signIn(email, password);
+```
+
+### Authentication Store
+
+Zustand store manages authentication state:
+
+```typescript
+// Using the auth store
+import { useAuth } from '../hooks/useAuth';
+
+const { user, isAuthenticated, signIn, signOut } = useAuth();
+```
+
+## Environment Variables
+
+Create `.env.local` with:
+
+```env
+NEXT_PUBLIC_API_URL=http://localhost:8000
+```
+
+## Pages
+
+- `/` - Home page with navigation
+- `/signin` - Sign in form
+- `/register` - Registration form  
+- `/dashboard` - User dashboard (protected)
+
+## Components Structure
+
+```
+src/
+├── app/                 # Next.js app router pages
+├── components/          # Reusable components
+├── hooks/              # Custom React hooks
+├── i18n/               # Internationalization setup
+├── lib/                # Utility libraries
+└── store/              # Zustand stores
+```
+
+## Internationalization
+
+The app is ready for multi-language support using i18next:
+
+```typescript
+// Using translations
+import { useTranslation } from 'react-i18next';
+
+const { t } = useTranslation();
+// t('auth.signIn') -> "Sign In"
+```
+
+Add new languages by creating files in `src/i18n/locales/`.
 
 ## Learn More
 
