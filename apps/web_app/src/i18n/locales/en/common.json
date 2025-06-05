@@ -1,0 +1,55 @@
+{
+  "auth": {
+    "signIn": "Sign In",
+    "signUp": "Sign Up",
+    "register": "Register",
+    "email": "Email",
+    "password": "Password",
+    "confirmPassword": "Confirm Password",
+    "name": "Name",
+    "fullName": "Full Name",
+    "forgotPassword": "Forgot Password?",
+    "rememberMe": "Remember me",
+    "signInWithEmail": "Sign in with email",
+    "createAccount": "Create an account",
+    "alreadyHaveAccount": "Already have an account?",
+    "dontHaveAccount": "Don't have an account?",
+    "signOut": "Sign Out",
+    "welcomeBack": "Welcome back",
+    "createYourAccount": "Create your account",
+    "signInToYourAccount": "Sign in to your account",
+    "enterEmailAndPassword": "Enter your email and password to access your account",
+    "enterDetailsToRegister": "Enter your details to create a new account"
+  },
+  "validation": {
+    "required": "This field is required",
+    "emailInvalid": "Please enter a valid email address",
+    "passwordTooShort": "Password must be at least 8 characters",
+    "passwordsDoNotMatch": "Passwords do not match",
+    "nameRequired": "Name is required",
+    "nameMinLength": "Name must be at least 2 characters"
+  },
+  "errors": {
+    "generic": "Something went wrong. Please try again.",
+    "invalidCredentials": "Invalid email or password",
+    "userExists": "A user with this email already exists",
+    "networkError": "Network error. Please check your connection.",
+    "unauthorized": "You are not authorized to access this resource"
+  },
+  "common": {
+    "loading": "Loading...",
+    "submit": "Submit",
+    "cancel": "Cancel",
+    "save": "Save",
+    "delete": "Delete",
+    "edit": "Edit",
+    "close": "Close",
+    "back": "Back",
+    "next": "Next",
+    "previous": "Previous",
+    "welcome": "Welcome",
+    "dashboard": "Dashboard",
+    "profile": "Profile",
+    "settings": "Settings"
+  }
+}

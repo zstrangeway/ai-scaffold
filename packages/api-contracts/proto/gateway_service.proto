@@ -6,82 +6,157 @@ package gateway_service;
 
 // Gateway Service API
 service GatewayService {
-    // User Management
+    // Authentication endpoints
+    rpc SignIn(SignInRequest) returns (SignInResponse);
+    rpc Register(RegisterRequest) returns (RegisterResponse);
+    rpc ValidateToken(ValidateTokenRequest) returns (ValidateTokenResponse);
+    rpc RefreshToken(RefreshTokenRequest) returns (RefreshTokenResponse);
+    
+    // User profile endpoints (authenticated user's own data)
+    rpc GetProfile(GetProfileRequest) returns (GetProfileResponse);
+    rpc UpdateProfile(UpdateProfileRequest) returns (UpdateProfileResponse);
+    rpc DeleteProfile(DeleteProfileRequest) returns (DeleteProfileResponse);
+    
+    // User management endpoints (admin operations)
     rpc GetUserById(GetUserByIdRequest) returns (GetUserByIdResponse);
     rpc GetUserByEmail(GetUserByEmailRequest) returns (GetUserByEmailResponse);
     rpc CreateUser(CreateUserRequest) returns (CreateUserResponse);
     rpc UpdateUser(UpdateUserRequest) returns (UpdateUserResponse);
     rpc DeleteUser(DeleteUserRequest) returns (DeleteUserResponse);
     rpc ListUsers(ListUsersRequest) returns (ListUsersResponse);
-    
-    // Authentication
-    rpc Register(RegisterRequest) returns (RegisterResponse);
-    rpc Login(LoginRequest) returns (LoginResponse);
-    rpc GetProfile(GetProfileRequest) returns (GetProfileResponse);
-    rpc UpdateProfile(UpdateProfileRequest) returns (UpdateProfileResponse);
-    rpc DeleteProfile(DeleteProfileRequest) returns (DeleteProfileResponse);
 }
 
-// Get User Request
-message GetUserByIdRequest {
-    string id = 1;
-}
-
-// Get User Response
-message GetUserByIdResponse {
-    User user = 1;
-}
-
-// Get User By Email Request
-message GetUserByEmailRequest {
+// Authentication Messages
+message SignInRequest {
     string email = 1;
+    string password = 2;
 }
 
-// Get User By Email Response
-message GetUserByEmailResponse {
-    User user = 1;
+message SignInResponse {
+    bool success = 1;
+    string access_token = 2;
+    string refresh_token = 3;
+    string token_type = 4;
+    int32 expires_in = 5;
+    UserProfile user = 6;
+    string error_message = 7;
 }
 
-// Create User Request
-message CreateUserRequest {
+message RegisterRequest {
+    string name = 1;
+    string email = 2;
+    string password = 3;
+}
+
+message RegisterResponse {
+    bool success = 1;
+    string access_token = 2;
+    string refresh_token = 3;
+    string token_type = 4;
+    int32 expires_in = 5;
+    UserProfile user = 6;
+    string error_message = 7;
+}
+
+message ValidateTokenRequest {
+    string access_token = 1;
+}
+
+message ValidateTokenResponse {
+    bool valid = 1;
+    UserProfile user = 2;
+    string error_message = 3;
+}
+
+message RefreshTokenRequest {
+    string refresh_token = 1;
+}
+
+message RefreshTokenResponse {
+    bool success = 1;
+    string access_token = 2;
+    string refresh_token = 3;
+    string token_type = 4;
+    int32 expires_in = 5;
+    string error_message = 6;
+}
+
+// User Profile Messages (authenticated user's own data)
+message GetProfileRequest {
+    // Token is passed via metadata/headers
+}
+
+message GetProfileResponse {
+    UserProfile user = 1;
+}
+
+message UpdateProfileRequest {
     string name = 1;
     string email = 2;
 }
 
-// Create User Response
+message UpdateProfileResponse {
+    UserProfile user = 1;
+}
+
+message DeleteProfileRequest {
+    // Token is passed via metadata/headers
+}
+
+message DeleteProfileResponse {
+    string message = 1;
+}
+
+// User Management Messages (admin operations)
+message GetUserByIdRequest {
+    string id = 1;
+}
+
+message GetUserByIdResponse {
+    User user = 1;
+}
+
+message GetUserByEmailRequest {
+    string email = 1;
+}
+
+message GetUserByEmailResponse {
+    User user = 1;
+}
+
+message CreateUserRequest {
+    string name = 1;
+    string email = 2;
+    string password = 3;
+}
+
 message CreateUserResponse {
     User user = 1;
 }
 
-// Update User Request
 message UpdateUserRequest {
     string id = 1;
     string name = 2;
     string email = 3;
 }
 
-// Update User Response
 message UpdateUserResponse {
     User user = 1;
 }
 
-// Delete User Request
 message DeleteUserRequest {
     string id = 1;
 }
 
-// Delete User Response
 message DeleteUserResponse {
     string id = 1;
 }
 
-// List Users Request
 message ListUsersRequest {
     int32 page = 1;
     int32 limit = 2;
 }
 
-// List Users Response
 message ListUsersResponse {
     repeated User users = 1;
     int32 total = 2;
@@ -89,76 +164,19 @@ message ListUsersResponse {
     int32 limit = 4;
 }
 
-// Authentication Messages
-
-// Register Request
-message RegisterRequest {
-    string name = 1;
-    string email = 2;
-    string password = 3;
-}
-
-// Register Response
-message RegisterResponse {
-    string access_token = 1;
-    string token_type = 2;
-    int32 expires_in = 3;
-}
-
-// Login Request
-message LoginRequest {
-    string email = 1;
-    string password = 2;
-}
-
-// Login Response
-message LoginResponse {
-    string access_token = 1;
-    string token_type = 2;
-    int32 expires_in = 3;
-}
-
-// Get Profile Request
-message GetProfileRequest {
-    // Token is passed via metadata/headers
-}
-
-// Get Profile Response
-message GetProfileResponse {
-    UserProfile user = 1;
-}
-
-// Update Profile Request
-message UpdateProfileRequest {
-    string name = 1;
-    string email = 2;
-}
-
-// Update Profile Response
-message UpdateProfileResponse {
-    UserProfile user = 1;
-}
-
-// Delete Profile Request
-message DeleteProfileRequest {
-    // Token is passed via metadata/headers
-}
-
-// Delete Profile Response
-message DeleteProfileResponse {
-    string message = 1;
-}
-
-// User Message (administrative view)
+// Data Models
 message User {
     string id = 1;
     string name = 2;
     string email = 3;
+    string created_at = 4;
+    string updated_at = 5;
 }
 
-// User Profile Message (user's own view)
 message UserProfile {
     string id = 1;
     string name = 2;
     string email = 3;
+    string created_at = 4;
+    string updated_at = 5;
 }
