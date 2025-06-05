@@ -1,4 +1,7 @@
+"use client";
+
 import Image from "next/image";
+import { Button } from "@my-scaffold-project/web-ui";
 
 export default function Home() {
   return (
@@ -25,6 +28,49 @@ export default function Home() {
           </li>
         </ol>
 
+        {/* Web-UI Components Demo Section */}
+        <div className="flex flex-col gap-4 items-center">
+          <h2 className="text-xl font-semibold text-center">
+            🎨 Web-UI Components Demo
+          </h2>
+          <p className="text-sm text-muted-foreground text-center max-w-md">
+            These buttons are from the shared @my-scaffold-project/web-ui
+            package. Try editing the components in
+            packages/web-ui/src/components/ to see hot-reloading in action!
+          </p>
+
+          {/* Button Variants Demo */}
+          <div className="flex gap-3 flex-wrap justify-center">
+            <Button variant="default">Default Button</Button>
+            <Button variant="secondary">Secondary</Button>
+            <Button variant="outline">Outline</Button>
+            <Button variant="ghost">Ghost</Button>
+          </div>
+
+          {/* Button Sizes Demo */}
+          <div className="flex gap-3 items-center flex-wrap justify-center">
+            <Button size="sm">Small</Button>
+            <Button size="default">Default Size</Button>
+            <Button size="lg">Large</Button>
+          </div>
+
+          {/* Interactive Buttons */}
+          <div className="flex gap-3 flex-wrap justify-center">
+            <Button
+              variant="destructive"
+              onClick={() => alert("Destructive action clicked!")}
+            >
+              Destructive Action
+            </Button>
+            <Button
+              variant="link"
+              onClick={() => alert("Link button clicked!")}
+            >
+              Link Style
+            </Button>
+          </div>
+        </div>
+
         <div className="flex gap-4 items-center flex-col sm:flex-row">
           <a
             className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
@@ -41,14 +87,17 @@ export default function Home() {
             />
             Deploy now
           </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+
+          {/* Replace the docs link with our Button component */}
+          <Button variant="outline" size="default" asChild>
+            <a
+              href="http://localhost:6006"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              🚀 View Components in Storybook
+            </a>
+          </Button>
         </div>
       </main>
       <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
