@@ -15,48 +15,92 @@ services:
     networks:
       - my_scaffold_network
 
+  # Shared UI Components Storybook
+  web_ui:
+    build:
+      context: .
+      dockerfile: ./packages/web-ui/Dockerfile
+    container_name: my_scaffold_web_ui
+    ports:
+      - "6006:6006" # Storybook default port
+    volumes:
+      - ./packages/web-ui:/app/packages/web-ui
+      - ./pnpm-workspace.yaml:/app/pnpm-workspace.yaml:ro
+      - ./pnpm-lock.yaml:/app/pnpm-lock.yaml:ro
+      - ./package.json:/app/package.json:ro
+      - /app/node_modules
+      - /app/packages/web-ui/node_modules
+    working_dir: /app/packages/web-ui
+    networks:
+      - my_scaffold_network
+    command: pnpm dev
+
   web_site:
     build:
-      context: ./apps/web_site
-      dockerfile: Dockerfile # Placeholder, needs to be created
+      context: .
+      dockerfile: ./apps/web_site/Dockerfile
     container_name: my_scaffold_web_site
     ports:
       - "3000:5173" # Host:Container (Vite default is 5173)
     volumes:
-      - ./apps/web_site:/app
+      - ./apps/web_site:/app/apps/web_site
+      - ./packages:/app/packages:ro # Mount shared packages
+      - ./pnpm-workspace.yaml:/app/pnpm-workspace.yaml:ro
+      - ./pnpm-lock.yaml:/app/pnpm-lock.yaml:ro
+      - ./package.json:/app/package.json:ro
       - /app/node_modules # Isolate node_modules in container
+      - /app/apps/web_site/node_modules
+    working_dir: /app/apps/web_site
     networks:
       - my_scaffold_network
+    depends_on:
+      - web_ui
     # env_file:
     #   - ./apps/web_site/.env
 
   web_app:
     build:
-      context: ./apps/web_app
-      dockerfile: Dockerfile # Placeholder, needs to be created
+      context: .
+      dockerfile: ./apps/web_app/Dockerfile
     container_name: my_scaffold_web_app
     ports:
       - "3001:5173" # Host:Container
     volumes:
-      - ./apps/web_app:/app
+      - ./apps/web_app:/app/apps/web_app
+      - ./packages:/app/packages:ro # Mount shared packages
+      - ./pnpm-workspace.yaml:/app/pnpm-workspace.yaml:ro
+      - ./pnpm-lock.yaml:/app/pnpm-lock.yaml:ro
+      - ./package.json:/app/package.json:ro
       - /app/node_modules
+      - /app/apps/web_app/node_modules
+    working_dir: /app/apps/web_app
     networks:
       - my_scaffold_network
+    depends_on:
+      - web_ui
     # env_file:
     #   - ./apps/web_app/.env
 
   web_admin:
     build:
-      context: ./apps/web_admin
-      dockerfile: Dockerfile # Placeholder, needs to be created
+      context: .
+      dockerfile: ./apps/web_admin/Dockerfile
     container_name: my_scaffold_web_admin
     ports:
       - "3002:5173" # Host:Container
     volumes:
-      - ./apps/web_admin:/app
+      - ./apps/web_admin:/app/apps/web_admin
+      - ./packages:/app/packages:ro # Mount shared packages
+      - ./pnpm-workspace.yaml:/app/pnpm-workspace.yaml:ro
+      - ./pnpm-lock.yaml:/app/pnpm-lock.yaml:ro
+      - ./package.json:/app/package.json:ro
       - /app/node_modules
+      - /app/apps/web_admin/node_modules
+    working_dir: /app/apps/web_admin
     networks:
       - my_scaffold_network
+    depends_on:
+      - web_ui
     # env_file:
     #   - ./apps/web_admin/.env
 

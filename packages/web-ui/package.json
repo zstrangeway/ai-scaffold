@@ -10,7 +10,7 @@
     "src"
   ],
   "scripts": {
-    "dev": "storybook dev -p 6006",
+    "dev": "storybook dev -p 6006 --host 0.0.0.0",
     "build": "tsup",
     "build:storybook": "storybook build",
     "lint": "eslint src --ext .ts,.tsx",
