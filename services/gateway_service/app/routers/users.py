@@ -30,6 +30,20 @@ class UserResponse(BaseModel):
         }
 
 
+class UserCreateRequest(BaseModel):
+    """User creation request model (for admin use)"""
+    name: str
+    email: EmailStr
+
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "name": "John Doe",
+                "email": "john.doe@example.com"
+            }
+        }
+
+
 class UserUpdateRequest(BaseModel):
     """User update request model"""
     name: str
@@ -66,6 +80,62 @@ class UsersListResponse(BaseModel):
                 "limit": 10
             }
         }
+
+
+@router.post("/", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
+async def create_user(
+    user_data: UserCreateRequest,
+    current_user: AuthUser = Depends(get_current_user),
+    user_client: UserServiceClient = Depends(get_user_client)
+):
+    """
+    Create a new user without password (admin function)
+    
+    Creates a new user account without a password. This is an administrative
+    function for creating user accounts that will be set up later.
+    Requires authentication.
+    
+    Args:
+        user_data: User creation information
+        current_user: Currently authenticated user
+        user_client: gRPC client for user service
+        
+    Returns:
+        Created user information
+        
+    Raises:
+        HTTPException: If email is already in use or other errors
+    """
+    try:
+        # Check if user already exists
+        existing_user = await user_client.get_user_by_email(user_data.email)
+        if existing_user:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="User with this email already exists"
+            )
+
+        # Create user
+        user = await user_client.create_user(user_data.name, user_data.email)
+        if not user:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Failed to create user"
+            )
+
+        return UserResponse(
+            id=user.id,
+            name=user.name,
+            email=user.email
+        )
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Error creating user"
+        )
 
 
 @router.get("/", response_model=UsersListResponse)
