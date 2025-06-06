@@ -11,7 +11,7 @@
   ],
   "scripts": {
     "dev": "storybook dev -p 6006 --host 0.0.0.0",
-    "dev:build": "tsup --watch",
+    "dev:build": "tsup src/index.ts src/styles/globals.css --format cjs,esm --watch --no-dts --sourcemap",
     "build": "tsup",
     "build:storybook": "storybook build",
     "lint": "eslint src --ext .ts,.tsx",

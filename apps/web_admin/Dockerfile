@@ -13,7 +13,13 @@ COPY apps/web_admin/package.json ./apps/web_admin/
 COPY apps/*/package.json ./apps/*/
 COPY packages/*/package.json ./packages/*/
 
-# Install dependencies
+# Copy packages source code for workspace linking
+COPY packages/ ./packages/
+
+# Build the web-ui package so it's available for workspace linking
+RUN cd packages/web-ui && pnpm install --no-frozen-lockfile && pnpm build
+
+# Install dependencies (now workspace links can be created properly)
 RUN pnpm install --no-frozen-lockfile
 
 # Expose Next.js port
