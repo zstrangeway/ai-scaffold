@@ -1,5 +1,5 @@
-# Use Node.js Alpine image
-FROM node:20-alpine
+# Simple development Dockerfile
+FROM node:22-alpine
 
 # Install pnpm
 RUN corepack enable && corepack prepare pnpm@latest --activate
@@ -7,14 +7,7 @@ RUN corepack enable && corepack prepare pnpm@latest --activate
 # Set working directory
 WORKDIR /app
 
-# Copy package files for dependency installation
-COPY pnpm-workspace.yaml package.json pnpm-lock.yaml ./
-COPY apps/web_site/package.json ./apps/web_site/
-COPY apps/*/package.json ./apps/*/
-COPY packages/*/package.json ./packages/*/
-
-# Install dependencies
-RUN pnpm install --no-frozen-lockfile
-
-# Expose Next.js port
+# Expose port
 EXPOSE 3000
+
+# Volume mounts and docker-compose command handle the rest
