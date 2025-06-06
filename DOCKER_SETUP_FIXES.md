@@ -37,6 +37,24 @@
 - **Problem**: Missing generated API contracts that services depend on
 - **Solution**: Successfully generated contracts using `pnpm run generate-contracts`
 
+### 7. **Python Dependency Path Issues**
+- **Problem**: Services trying to use local path dependencies for API contracts in pyproject.toml, which don't work in Docker
+- **Solution**: 
+  - Removed local path dependencies from `pyproject.toml` files
+  - Services use fallback import logic with volume-mounted contracts
+  - Fixed protobuf version compatibility (changed from ^6.31.0 to ^4.25.0)
+
+### 8. **FastAPI Server Startup Issues**
+- **Problem**: `notification_service` and `ai_service` had minimal FastAPI apps without proper server startup
+- **Solution**: 
+  - Updated both services to include uvicorn startup code
+  - Added health check endpoints
+  - Added proper dev dependencies (pytest, black, flake8)
+
+### 9. **Package Manager Conflicts**
+- **Problem**: Conflicting `package-lock.json` files present while using pnpm
+- **Solution**: Removed all `package-lock.json` files from frontend apps
+
 ## Current Architecture
 
 ### Frontend Applications (Next.js)
@@ -47,10 +65,10 @@
 
 ### Backend Services (Python FastAPI)
 - **postgres_db** (Port 5432): PostgreSQL database
-- **gateway_service** (Port 8000): API Gateway/Router
-- **user_service** (Port 50051): User management (gRPC)
-- **notification_service** (Port 8002): Notifications
-- **ai_service** (Port 8003): AI features
+- **gateway_service** (Port 8000): API Gateway/Router (fully implemented)
+- **user_service** (Port 50051): User management (gRPC, fully implemented)
+- **notification_service** (Port 8002): Notifications (basic FastAPI)
+- **ai_service** (Port 8003): AI features (basic FastAPI)
 
 ## How to Run the Development Environment
 
@@ -104,6 +122,26 @@ docker compose down -v
 - **ai_service**: http://localhost:8003
 - **PostgreSQL**: localhost:5432
 
+## API Endpoints Available
+
+### Gateway Service (Port 8000)
+- `GET /` - Health check
+- `GET /health` - Health status
+- `GET /docs` - OpenAPI documentation
+- Authentication and user management endpoints
+
+### User Service (Port 50051)
+- gRPC service with user CRUD operations
+- Fully implemented with database integration
+
+### Notification Service (Port 8002)
+- `GET /` - Service status
+- `GET /health` - Health check
+
+### AI Service (Port 8003)
+- `GET /` - Service status
+- `GET /health` - Health check
+
 ## Troubleshooting Common Issues
 
 ### 1. **Port Already in Use**
@@ -129,6 +167,7 @@ sudo docker compose up --build
 - Ensure API contracts are generated: `pnpm run generate-contracts`
 - Check that volume mounts are working in docker-compose.yml
 - Verify pnpm-lock.yaml exists and is up to date
+- Check no package-lock.json files exist: `find . -name "package-lock.json" -not -path "*/node_modules/*"`
 
 ### 4. **Hot Reloading Not Working**
 - Ensure `CHOKIDAR_USEPOLLING=true` is set in environment
@@ -139,6 +178,23 @@ sudo docker compose up --build
 - Ensure PostgreSQL container is running: `docker compose ps`
 - Check database logs: `docker compose logs postgres_db`
 - Verify environment variables match in services
+
+### 6. **Python Import Errors**
+- Check if API contracts are generated: `ls packages/api-contracts/generated/py/`
+- Verify volume mounts for contracts: `docker compose logs user_service`
+- Check Python path: `docker compose exec user_service python -c "import sys; print(sys.path)"`
+
+### 7. **Build Failures**
+```bash
+# Clean build with no cache
+docker compose build --no-cache
+
+# Remove all containers and images
+docker compose down -v --rmi all
+
+# Rebuild specific service
+docker compose build --no-cache gateway_service
+```
 
 ## Development Workflow
 
@@ -159,20 +215,59 @@ sudo docker compose up --build
 2. Access different parts via their respective URLs
 3. Monitor logs: `docker compose logs -f`
 
+## Testing the Setup
+
+Run the health check script:
+```bash
+./scripts/test-docker-setup.sh
+```
+
+This will test all service endpoints and provide troubleshooting guidance.
+
 ## Next Steps
 
 1. **Test the setup** when Docker daemon is working properly
-2. **Implement basic functionality** in each service
+2. **Implement additional functionality** in notification_service and ai_service
 3. **Set up proper database migrations** for user_service
 4. **Configure environment files** for each service as needed
 5. **Add health checks** to docker-compose.yml for better reliability
+6. **Implement actual notification logic** (email, SMS, etc.)
+7. **Add AI/LLM integration** to ai_service
 
 ## Files Modified
 
+### Docker Configuration
 - `docker-compose.yml` - Fixed version, ports, environment variables
+
+### Frontend Applications  
 - `apps/web_site/Dockerfile` - Updated to use pnpm and proper monorepo setup
 - `apps/web_app/Dockerfile` - Updated to use pnpm and proper monorepo setup  
 - `apps/web_admin/Dockerfile` - Updated to use pnpm and proper monorepo setup
-- Generated API contracts in `packages/api-contracts/generated/`
+- Removed `package-lock.json` files from all frontend apps
+
+### Backend Services
+- `services/user_service/pyproject.toml` - Removed path dependency, fixed protobuf version
+- `services/gateway_service/pyproject.toml` - Removed path dependency, fixed protobuf version
+- `services/notification_service/pyproject.toml` - Added uvicorn and dev dependencies
+- `services/notification_service/app/main.py` - Added proper FastAPI server startup
+- `services/ai_service/pyproject.toml` - Added dev dependencies
+- `services/ai_service/app/main.py` - Added proper FastAPI server startup
+
+### Generated Assets
+- `packages/api-contracts/generated/` - Generated TypeScript and Python contracts
+
+## Service Implementation Status
+
+### ✅ Fully Implemented
+- **user_service**: Complete gRPC service with database integration, user CRUD operations
+- **gateway_service**: Complete FastAPI service with authentication, user management API
+- **web_ui**: Storybook with shadcn/ui components
+
+### 🔄 Basic Implementation  
+- **notification_service**: Basic FastAPI service (ready for notification logic implementation)
+- **ai_service**: Basic FastAPI service (ready for AI/LLM integration)
+- **web_site**: Next.js app (needs content implementation)
+- **web_app**: Next.js app with API contracts (needs UI implementation)  
+- **web_admin**: Next.js app (needs admin UI implementation)
 
 The Docker setup is now properly configured for a modern full-stack development environment with hot reloading support for all components!

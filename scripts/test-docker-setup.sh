@@ -50,8 +50,11 @@ check_url "http://localhost:6006" "web_ui (Storybook)"
 
 # Test backend services
 check_url "http://localhost:8000" "gateway_service"
+check_url "http://localhost:8000/health" "gateway_service health"
 check_url "http://localhost:8002" "notification_service"
+check_url "http://localhost:8002/health" "notification_service health"
 check_url "http://localhost:8003" "ai_service"
+check_url "http://localhost:8003/health" "ai_service health"
 
 echo ""
 echo "🔌 Testing Database and gRPC Services..."
@@ -66,6 +69,19 @@ echo ""
 echo "📦 Checking Generated API Contracts..."
 if [ -d "packages/api-contracts/generated/ts" ] && [ -d "packages/api-contracts/generated/py" ]; then
     echo "✅ API contracts generated successfully"
+    
+    # Check specific files
+    if [ -f "packages/api-contracts/generated/py/user_service_pb2.py" ]; then
+        echo "✅ Python gRPC stubs available"
+    else
+        echo "❌ Python gRPC stubs missing"
+    fi
+    
+    if [ -f "packages/api-contracts/generated/ts/user_service_pb.ts" ]; then
+        echo "✅ TypeScript protobuf definitions available"
+    else
+        echo "❌ TypeScript protobuf definitions missing"
+    fi
 else
     echo "❌ API contracts missing - run 'pnpm run generate-contracts'"
 fi
@@ -88,6 +104,39 @@ else
     echo "❌ pnpm-lock.yaml missing - run 'pnpm install'"
 fi
 
+# Check Python dependencies
+echo ""
+echo "🐍 Checking Python Service Dependencies..."
+
+if [ -f "services/user_service/poetry.lock" ]; then
+    echo "✅ user_service dependencies locked"
+else
+    echo "❌ user_service poetry.lock missing"
+fi
+
+if [ -f "services/gateway_service/poetry.lock" ]; then
+    echo "✅ gateway_service dependencies locked"
+else
+    echo "❌ gateway_service poetry.lock missing"
+fi
+
+# Check for protobuf version compatibility
+echo ""
+echo "📋 Checking Configuration..."
+
+if grep -q 'protobuf = "\^4\.25\.0"' services/*/pyproject.toml; then
+    echo "✅ Compatible protobuf versions configured"
+else
+    echo "⚠️  Warning: Check protobuf versions in pyproject.toml files"
+fi
+
+# Check Docker Compose setup
+if grep -q "CHOKIDAR_USEPOLLING=true" docker-compose.yml; then
+    echo "✅ Hot reloading configured"
+else
+    echo "❌ Hot reloading not configured"
+fi
+
 echo ""
 echo "🎯 Quick Commands for Development:"
 echo ""
@@ -103,8 +152,23 @@ echo ""
 echo "# View logs:"
 echo "docker compose logs -f"
 echo ""
+echo "# View specific service logs:"
+echo "docker compose logs -f gateway_service"
+echo ""
+echo "# Rebuild specific service:"
+echo "docker compose build --no-cache gateway_service"
+echo ""
+echo "# Clean restart (remove volumes):"
+echo "docker compose down -v && docker compose up --build"
+echo ""
+echo "# Generate API contracts:"
+echo "pnpm run generate-contracts"
+echo ""
 echo "# Stop all services:"
 echo "docker compose down"
 echo ""
 
 echo "Health check complete! 🏁"
+
+echo ""
+echo "📚 For detailed troubleshooting, see: DOCKER_SETUP_FIXES.md"
