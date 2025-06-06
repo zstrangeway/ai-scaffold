@@ -1,5 +1,5 @@
 # Dockerfile for web_app (Next.js)
-FROM node:18-alpine AS base
+FROM node:20-alpine AS base
 
 # Install pnpm
 RUN corepack enable && corepack prepare pnpm@latest --activate
@@ -12,23 +12,21 @@ COPY pnpm-workspace.yaml package.json pnpm-lock.yaml ./
 
 # Copy package.json files for dependency resolution
 COPY apps/web_app/package.json ./apps/web_app/
-COPY packages/*/package.json ./packages/*/
 COPY apps/*/package.json ./apps/*/
+COPY packages/*/package.json ./packages/*/
 
 # Install dependencies
 RUN pnpm install --frozen-lockfile
 
-# Copy all shared packages (read-only for hot-reloading)
+# Copy source code
+COPY apps/web_app ./apps/web_app
 COPY packages ./packages
 
-# Copy app source code
-COPY apps/web_app ./apps/web_app
-
-# Set working directory to the app
+# Set working directory to web_app
 WORKDIR /app/apps/web_app
 
-# Expose Next.js dev port
-EXPOSE 3000
+# Expose Next.js port
+EXPOSE 3001
 
-# Start Next.js development server
-CMD ["pnpm", "dev", "--hostname", "0.0.0.0"]
+# Start Next.js with hot-reloading
+CMD ["pnpm", "dev", "--hostname", "0.0.0.0", "--port", "3001"]
