@@ -22,7 +22,7 @@ except ImportError:
     import sys
     
     # Add the generated contracts to the path
-    generated_contracts_path = '/app/generated_contracts/py'
+    generated_contracts_path = '/app/packages/api-contracts/generated/py'
     if os.path.exists(generated_contracts_path):
         sys.path.insert(0, generated_contracts_path)
     else:

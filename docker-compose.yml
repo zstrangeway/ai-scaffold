@@ -31,7 +31,7 @@ services:
     working_dir: /app/packages/web-ui
     networks:
       - my_scaffold_network
-    command: pnpm dev
+    command: sh -c "pnpm dev:build & pnpm dev"
 
   web_site:
     build:
@@ -56,6 +56,7 @@ services:
     environment:
       - NODE_ENV=development
       - CHOKIDAR_USEPOLLING=true # Enable hot reloading in Docker
+    command: ["pnpm", "dev", "--hostname", "0.0.0.0", "--port", "3000"]
     # env_file:
     #   - ./apps/web_site/.env
 
@@ -82,6 +83,7 @@ services:
     environment:
       - NODE_ENV=development
       - CHOKIDAR_USEPOLLING=true # Enable hot reloading in Docker
+    command: ["pnpm", "dev", "--hostname", "0.0.0.0", "--port", "3001"]
     # env_file:
     #   - ./apps/web_app/.env
 
@@ -108,13 +110,14 @@ services:
     environment:
       - NODE_ENV=development
       - CHOKIDAR_USEPOLLING=true # Enable hot reloading in Docker
+    command: ["pnpm", "dev", "--hostname", "0.0.0.0", "--port", "3002"]
     # env_file:
     #   - ./apps/web_admin/.env
 
   gateway_service:
     build:
-      context: ./services/gateway_service
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: ./services/gateway_service/Dockerfile
     container_name: my_scaffold_gateway_service
     ports:
       - "8000:8000"
@@ -122,68 +125,71 @@ services:
       - postgres_db # Or other services it directly needs at startup
       - user_service
     volumes:
-      - ./services/gateway_service:/app
-      # Mount for generated contracts if needed during development
-      - ./packages/api-contracts/generated/py:/app/generated_contracts/py:ro
+      - ./services/gateway_service:/app/services/gateway_service
+      - ./packages:/app/packages:ro # Mount shared packages for API contracts
     networks:
       - my_scaffold_network
     environment:
       - USER_SERVICE_URL=my_scaffold_user_service:50051
       - PYTHONPATH=/app
       - PYTHONUNBUFFERED=1 # For real-time logs
+    command: ["uvicorn", "services.gateway_service.app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
 
   user_service:
     build:
-      context: ./services/user_service
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: ./services/user_service/Dockerfile
     container_name: my_scaffold_user_service
     ports:
       - "50051:50051" # Expose gRPC port
     depends_on:
       - postgres_db
     volumes:
-      - ./services/user_service:/app
-      - ./packages/api-contracts/generated/py:/app/generated_contracts/py:ro
+      - ./services/user_service:/app/services/user_service
+      - ./packages:/app/packages:ro # Mount shared packages for API contracts
     networks:
       - my_scaffold_network
     environment:
       - DATABASE_URL=postgresql://scaffold_user:scaffold_password@postgres_db:5432/scaffold_db
       - PYTHONPATH=/app
       - PYTHONUNBUFFERED=1 # For real-time logs
+    command: ["python", "-m", "services.user_service.app.main"]
 
   notification_service:
     build:
-      context: ./services/notification_service
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: ./services/notification_service/Dockerfile
     container_name: my_scaffold_notification_service
     ports:
       - "8002:8000"
     depends_on:
       - postgres_db # If it needs db, or remove
     volumes:
-      - ./services/notification_service:/app
-      - ./packages/api-contracts/generated/py:/app/generated_contracts/py:ro
+      - ./services/notification_service:/app/services/notification_service
+      - ./packages:/app/packages:ro # Mount shared packages for API contracts
     networks:
       - my_scaffold_network
     environment:
       - PYTHONPATH=/app
       - PYTHONUNBUFFERED=1 # For real-time logs
+    command: ["uvicorn", "services.notification_service.app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
 
   ai_service:
     build:
-      context: ./services/ai_service
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: ./services/ai_service/Dockerfile
     container_name: my_scaffold_ai_service
     ports:
       - "8003:8000"
     volumes:
-      - ./services/ai_service:/app
-      - ./packages/api-contracts/generated/py:/app/generated_contracts/py:ro
+      - ./services/ai_service:/app/services/ai_service
+      - ./packages:/app/packages:ro # Mount shared packages for API contracts
     networks:
       - my_scaffold_network
     environment:
       - PYTHONPATH=/app
       - PYTHONUNBUFFERED=1 # For real-time logs
+    command: ["uvicorn", "services.ai_service.app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
 
 volumes:
   postgres_data:

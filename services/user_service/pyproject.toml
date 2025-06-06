@@ -9,11 +9,10 @@ packages = [{include = "app"}]
 [tool.poetry.dependencies]
 python = "^3.10"
 grpcio = "^1.60.0"
-grpcio-tools = "^1.60.0"
 sqlalchemy = "^2.0.0"
 psycopg2-binary = "^2.9.0"
 passlib = {extras = ["bcrypt"], version = "^1.7.4"}
-protobuf = "^4.25.0"
+protobuf = ">=5.27.0"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.0.0"

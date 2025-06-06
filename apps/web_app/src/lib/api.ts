@@ -1,4 +1,4 @@
-import { SignInRequest, RegisterRequest, SignInResponse, RegisterResponse } from '@my-scaffold-project/api-contracts/generated/ts/gateway_service_pb';
+import { LoginRequest, RegisterRequest, LoginResponse, RegisterResponse } from '@my-scaffold-project/api-contracts/generated/ts/gateway_service_pb';
 
 // API base configuration
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
@@ -52,7 +52,7 @@ class ApiClient {
   }
 
   async signIn(email: string, password: string): Promise<ApiResponse<any>> {
-    const request = new SignInRequest({
+    const request = new LoginRequest({
       email,
       password,
     });

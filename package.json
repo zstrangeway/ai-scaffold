@@ -3,6 +3,7 @@
   "private": true,
   "version": "0.0.0",
   "description": "Root for the my-scaffold-project monorepo",
+  "packageManager": "pnpm@10.11.1",
   "scripts": {
     "generate-contracts": "pnpm --filter @my-scaffold-project/api-contracts generate"
   },
